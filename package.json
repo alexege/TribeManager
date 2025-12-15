@@ -1,0 +1,9 @@
+{
+  "name": "vue3-express-mongo",
+  "private": true,
+  "scripts": {
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  }
+}
