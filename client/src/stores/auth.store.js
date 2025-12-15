@@ -4,50 +4,66 @@ import api from "../services/api";
 import router from "../router";
 
 export const useAuthStore = defineStore("auth", () => {
-  // state
+  // ─────────────
+  // STATE
+  // ─────────────
   const token = ref(localStorage.getItem("token"));
   const user = ref(null);
   const loading = ref(false);
-  const initialized = ref(false);
   const error = ref(null);
 
-  // getters
+  // 👇 THIS is the missing piece
+  const authReady = ref(false);
+
+  // ─────────────
+  // GETTERS
+  // ─────────────
   const isAuthenticated = computed(() => !!token.value && !!user.value);
 
-  // 🔁 Restore session on refresh
-  const initialize = async () => {
-    if (!token.value) {
-      initialized.value = true;
-      return;
-    }
+  // ─────────────
+  // ACTIONS
+  // ─────────────
 
+  // 🔁 Restore session on full page refresh
+  const restoreSession = async () => {
     try {
+      if (!token.value) return;
+
+      // 1️⃣ Refresh access token
+      const refresh = await api.post("/auth/refresh");
+      token.value = refresh.data.token;
+      localStorage.setItem("token", token.value);
+
+      // 2️⃣ Fetch user
       const res = await api.get("/auth/me");
       user.value = res.data;
-    } catch (err) {
-      // token invalid / expired
-      logout(false);
+    } catch {
+      await logout(false);
     } finally {
-      initialized.value = true;
+      authReady.value = true;
     }
   };
 
-  // actions
   const login = async (credentials) => {
     loading.value = true;
     error.value = null;
 
     try {
+      // 1️⃣ Login
       const res = await api.post("/auth/login", credentials);
       token.value = res.data.token;
       localStorage.setItem("token", token.value);
 
-      await initialize();
+      // 2️⃣ Fetch user
+      const me = await api.get("/auth/me");
+      user.value = me.data;
+
       router.push("/dashboard");
     } catch (err) {
       error.value = err.response?.data?.message || "Login failed";
     } finally {
       loading.value = false;
+      authReady.value = true;
     }
   };
 
@@ -65,21 +81,35 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const logout = (redirect = true) => {
+  const logout = async (redirect = true) => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // ignore network errors
+    }
+
     token.value = null;
     user.value = null;
     localStorage.removeItem("token");
-    if (redirect) router.push("/login");
+
+    if (redirect) {
+      router.push("/login");
+    }
   };
 
   return {
+    // state
     token,
     user,
     loading,
     error,
-    initialized,
+    authReady,
+
+    // getters
     isAuthenticated,
-    initialize,
+
+    // actions
+    restoreSession,
     login,
     register,
     logout,

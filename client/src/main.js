@@ -8,9 +8,9 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
-app.use(router);
 
-const auth = useAuthStore();
-auth.initialize().then(() => {
-  app.mount("#app");
-});
+const authStore = useAuthStore(pinia);
+await authStore.restoreSession();
+
+app.use(router);
+app.mount("#app");

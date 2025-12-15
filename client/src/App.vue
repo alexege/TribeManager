@@ -25,7 +25,7 @@ onMounted(() => {
     </nav>
 
     <!-- Route outlet -->
-    <div v-if="!auth.initialized">Loading...</div>
+    <div v-if="!auth.authReady">Loading...</div>
     <RouterView v-else />
   </div>
 </template>
