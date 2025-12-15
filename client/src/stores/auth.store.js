@@ -6,11 +6,31 @@ import router from "../router";
 export const useAuthStore = defineStore("auth", () => {
   // state
   const token = ref(localStorage.getItem("token"));
+  const user = ref(null);
   const loading = ref(false);
+  const initialized = ref(false);
   const error = ref(null);
 
   // getters
-  const isAuthenticated = computed(() => !!token.value);
+  const isAuthenticated = computed(() => !!token.value && !!user.value);
+
+  // 🔁 Restore session on refresh
+  const initialize = async () => {
+    if (!token.value) {
+      initialized.value = true;
+      return;
+    }
+
+    try {
+      const res = await api.get("/auth/me");
+      user.value = res.data;
+    } catch (err) {
+      // token invalid / expired
+      logout(false);
+    } finally {
+      initialized.value = true;
+    }
+  };
 
   // actions
   const login = async (credentials) => {
@@ -21,6 +41,8 @@ export const useAuthStore = defineStore("auth", () => {
       const res = await api.post("/auth/login", credentials);
       token.value = res.data.token;
       localStorage.setItem("token", token.value);
+
+      await initialize();
       router.push("/dashboard");
     } catch (err) {
       error.value = err.response?.data?.message || "Login failed";
@@ -35,7 +57,7 @@ export const useAuthStore = defineStore("auth", () => {
 
     try {
       await api.post("/auth/register", credentials);
-      router.push("/");
+      router.push("/login");
     } catch (err) {
       error.value = err.response?.data?.message || "Registration failed";
     } finally {
@@ -43,17 +65,21 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const logout = () => {
+  const logout = (redirect = true) => {
     token.value = null;
+    user.value = null;
     localStorage.removeItem("token");
-    router.push("/");
+    if (redirect) router.push("/login");
   };
 
   return {
     token,
+    user,
     loading,
     error,
+    initialized,
     isAuthenticated,
+    initialize,
     login,
     register,
     logout,
