@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth.store";
 
+import AdminDashboard from "../views/AdminDashboard.vue";
+import ModerationPanel from "../views/ModerationPanel.vue";
 import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import DashboardView from "../views/DashboardView.vue";
@@ -8,6 +10,27 @@ import DashboardView from "../views/DashboardView.vue";
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    // redirect root → login
+    {
+      path: "/",
+      redirect: "/login",
+    },
+    {
+      path: "/admin",
+      component: AdminDashboard,
+      meta: {
+        requiresAuth: true,
+        roles: ["admin"],
+      },
+    },
+    {
+      path: "/moderation",
+      component: ModerationPanel,
+      meta: {
+        requiresAuth: true,
+        roles: ["admin", "moderator"],
+      },
+    },
     {
       path: "/login",
       name: "Login",
@@ -24,11 +47,6 @@ const router = createRouter({
       component: DashboardView,
       meta: { requiresAuth: true },
     },
-    // redirect root → login
-    {
-      path: "/",
-      redirect: "/login",
-    },
   ],
 });
 
@@ -41,9 +59,13 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     next("/login");
-  } else {
-    next();
   }
+
+  if (to.meta.roles && !to.meta.roles.includes(auth.user.role)) {
+    return next("/dashboard");
+  }
+
+  next();
 });
 
 export default router;

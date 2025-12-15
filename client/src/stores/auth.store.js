@@ -19,6 +19,10 @@ export const useAuthStore = defineStore("auth", () => {
   // GETTERS
   // ─────────────
   const isAuthenticated = computed(() => !!token.value && !!user.value);
+  const isAdmin = computed(() => user.value?.role === "admin");
+  const isModerator = computed(() =>
+    ["admin", "moderator"].includes(user.value?.role)
+  );
 
   // ─────────────
   // ACTIONS
@@ -107,6 +111,8 @@ export const useAuthStore = defineStore("auth", () => {
 
     // getters
     isAuthenticated,
+    isAdmin,
+    isModerator,
 
     // actions
     restoreSession,

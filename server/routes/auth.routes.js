@@ -2,7 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { requireAuth } from "../middleware/auth.middleware.js";
+import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -48,9 +48,13 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
+    const accessToken = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      }
+    );
 
     const refreshToken = jwt.sign(
       { userId: user._id },
@@ -83,7 +87,7 @@ router.post("/refresh", (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
     const newAccessToken = jwt.sign(
-      { userId: decoded.userId },
+      { userId: decoded.userId, role: decoded.role },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );
@@ -112,6 +116,10 @@ router.get("/me", requireAuth, async (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie("refreshToken");
   res.json({ message: "Logged out" });
+});
+
+router.get("/admin/stats", requireAuth, requireRole("admin"), (req, res) => {
+  res.json({ secret: "admin-only data" });
 });
 
 export default router;
