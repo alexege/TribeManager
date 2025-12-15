@@ -1,45 +1,61 @@
 import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import api from "../services/api";
+import router from "../router";
 
-export const useAuthStore = defineStore("auth", {
-  state: () => ({
-    user: null,
-    token: localStorage.getItem("token"),
-  }),
+export const useAuthStore = defineStore("auth", () => {
+  // state
+  const token = ref(localStorage.getItem("token"));
+  const loading = ref(false);
+  const error = ref(null);
 
-  getters: {
-    isAuthenticated: (state) => !!state.token,
-  },
+  // getters
+  const isAuthenticated = computed(() => !!token.value);
 
-  actions: {
-    async login(email, password) {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  // actions
+  const login = async (credentials) => {
+    loading.value = true;
+    error.value = null;
 
-      if (!res.ok) throw new Error("Login failed");
+    try {
+      const res = await api.post("/auth/login", credentials);
+      token.value = res.data.token;
+      localStorage.setItem("token", token.value);
+      router.push("/dashboard");
+    } catch (err) {
+      error.value = err.response?.data?.message || "Login failed";
+    } finally {
+      loading.value = false;
+    }
+  };
 
-      const data = await res.json();
-      this.token = data.token;
-      this.user = data.user;
-      localStorage.setItem("token", data.token);
-    },
+  const register = async (credentials) => {
+    loading.value = true;
+    error.value = null;
 
-    async register(email, password) {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    try {
+      await api.post("/auth/register", credentials);
+      router.push("/");
+    } catch (err) {
+      error.value = err.response?.data?.message || "Registration failed";
+    } finally {
+      loading.value = false;
+    }
+  };
 
-      if (!res.ok) throw new Error("Register failed");
-    },
+  const logout = () => {
+    token.value = null;
+    localStorage.removeItem("token");
+    router.push("/");
+  };
 
-    logout() {
-      this.token = null;
-      this.user = null;
-      localStorage.removeItem("token");
-    },
-  },
+  return {
+    token,
+    loading,
+    error,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+  };
 });

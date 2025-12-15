@@ -1,19 +1,14 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth.store'
 
-const router = useRouter()
-
-const logout = () => {
-    localStorage.removeItem('token')
-    router.push('/')
-}
+const auth = useAuthStore()
 </script>
 
 <template>
     <div>
         <h1>Dashboard</h1>
-        <p>You are logged in 🎉</p>
+        <p>Logged in ✅</p>
 
-        <button @click="logout">Logout</button>
+        <button @click="auth.logout">Logout</button>
     </div>
 </template>

@@ -1,35 +1,17 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '../services/api'
+import { useAuthStore } from '../stores/auth.store'
 
-const router = useRouter()
+const auth = useAuthStore()
 
 const email = ref('')
 const password = ref('')
-const error = ref('')
-const loading = ref(false)
 
-const login = async () => {
-    error.value = ''
-    loading.value = true
-
-    try {
-        const res = await api.post('/auth/login', {
-            email: email.value,
-            password: password.value
-        })
-
-        // Save token
-        localStorage.setItem('token', res.data.token)
-
-        // Redirect to protected page (add later)
-        router.push('/dashboard')
-    } catch (err) {
-        error.value = err.response?.data?.message || 'Login failed'
-    } finally {
-        loading.value = false
-    }
+const submit = () => {
+    auth.login({
+        email: email.value,
+        password: password.value
+    })
 }
 </script>
 
@@ -37,44 +19,17 @@ const login = async () => {
     <div class="auth">
         <h1>Login</h1>
 
-        <form @submit.prevent="login">
-            <input type="email" placeholder="Email" v-model="email" required />
+        <form @submit.prevent="submit">
+            <input v-model="email" type="email" placeholder="Email" required />
+            <input v-model="password" type="password" placeholder="Password" required />
 
-            <input type="password" placeholder="Password" v-model="password" required />
-
-            <button :disabled="loading">
-                {{ loading ? 'Logging in...' : 'Login' }}
+            <button :disabled="auth.loading">
+                {{ auth.loading ? 'Logging in...' : 'Login' }}
             </button>
 
-            <p v-if="error" class="error">{{ error }}</p>
+            <p v-if="auth.error" class="error">{{ auth.error }}</p>
         </form>
 
-        <p>
-            No account?
-            <RouterLink to="/register">Register</RouterLink>
-        </p>
+        <RouterLink to="/register">Register</RouterLink>
     </div>
 </template>
-
-<style scoped>
-.auth {
-    max-width: 400px;
-    margin: 5rem auto;
-    display: flex;
-    flex-direction: column;
-}
-
-input {
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-}
-
-button {
-    padding: 0.75rem;
-}
-
-.error {
-    color: red;
-    margin-top: 1rem;
-}
-</style>
