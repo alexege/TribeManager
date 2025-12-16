@@ -50,22 +50,38 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore();
 
   if (!auth.authReady) {
-    return next(false);
+    await auth.authReady();
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    next("/login");
+    return "/login";
   }
 
-  if (to.meta.roles && !to.meta.roles.includes(auth.user.role)) {
-    return next("/dashboard");
+  if (to.meta.roles && !to.meta.roles.includes(auth.user?.role)) {
+    return "/dashboard"; // or /403
   }
-
-  next();
 });
+
+// router.beforeEach((to, from, next) => {
+//   const auth = useAuthStore();
+
+//   if (!auth.authReady) {
+//     return next(false);
+//   }
+
+//   if (to.meta.requiresAuth && !auth.isAuthenticated) {
+//     next("/login");
+//   }
+
+//   if (to.meta.roles && !to.meta.roles.includes(auth.user.role)) {
+//     return next("/dashboard");
+//   }
+
+//   next();
+// });
 
 export default router;

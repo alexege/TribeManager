@@ -1,55 +1,26 @@
-<script setup>
-import { ref } from 'vue'
-import { useAuthStore } from '../stores/auth.store'
-
-
-const auth = useAuthStore()
-
-
-const email = ref('')
-const password = ref('')
-
-
-const submit = () => {
-    auth.login({
-        email: email.value,
-        password: password.value
-    })
-}
-</script>
-
-
 <template>
     <div class="auth-page">
         <div class="auth-card">
             <header class="auth-header">
-                <h1>Sign In</h1>
-                <p>Please sign in to continue</p>
+                <h1>Welcome back</h1>
+                <p>Sign in to your account</p>
             </header>
-
 
             <form @submit.prevent="submit">
                 <div class="field">
                     <label>Email</label>
-                    <input v-model="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+                    <input v-model="email" type="email" placeholder="you@example.com" />
                 </div>
-
 
                 <div class="field">
                     <label>Password</label>
-                    <input v-model="password" type="password" placeholder="••••••••" autocomplete="current-password"
-                        required />
+                    <input v-model="password" type="password" placeholder="••••••••" />
                 </div>
 
-
-                <p v-if="auth.error" class="error">{{ auth.error }}</p>
-
-
-                <button class="primary" :disabled="auth.loading">
-                    {{ auth.loading ? 'Logging in…' : 'Login' }}
+                <button class="primary" :disabled="loading">
+                    {{ loading ? 'Signing in…' : 'Sign in' }}
                 </button>
             </form>
-
 
             <footer class="auth-footer">
                 <RouterLink to="/register">Create an account</RouterLink>
@@ -59,33 +30,32 @@ const submit = () => {
 </template>
 <style scoped>
 .auth-page {
-    display: flex;
+    align-items: center;
     justify-content: center;
+    background: linear-gradient(135deg, #0f172a, #020617);
 }
 
 
 .auth-card {
     width: 100%;
     max-width: 420px;
+    background: #020617;
     border: 1px solid #1e293b;
     border-radius: 16px;
     padding: 2rem;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
-    animation: fadeUp 0.35s ease-out;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
 
 .auth-header h1 {
-    font-size: 1.8rem;
+    font-size: 1.75rem;
     margin-bottom: 0.25rem;
-    text-align: center;
 }
 
 
 .auth-header p {
     color: #94a3b8;
     margin-bottom: 1.5rem;
-    text-align: center;
 }
 
 
@@ -96,8 +66,9 @@ const submit = () => {
 
 .field label {
     display: block;
-    font-size: 0.8rem;
-    margin-bottom: 0.35rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: #cbd5f5;
 }
 
 
@@ -108,7 +79,7 @@ const submit = () => {
     border: 1px solid #1e293b;
     background: #020617;
     color: white;
-    box-sizing: border-box;
+    font-size: 0.95rem;
 }
 
 
@@ -122,7 +93,7 @@ const submit = () => {
 button.primary {
     width: 100%;
     margin-top: 1rem;
-    padding: 0.85rem;
+    padding: 0.8rem;
     border-radius: 10px;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: white;
@@ -138,13 +109,6 @@ button.primary:disabled {
 }
 
 
-.error {
-    color: #f87171;
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-}
-
-
 .auth-footer {
     text-align: center;
     margin-top: 1.25rem;
@@ -153,25 +117,12 @@ button.primary:disabled {
 
 .auth-footer a {
     color: #818cf8;
-    font-size: 0.9rem;
     text-decoration: none;
+    font-size: 0.9rem;
 }
 
 
 .auth-footer a:hover {
     text-decoration: underline;
-}
-
-
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 </style>

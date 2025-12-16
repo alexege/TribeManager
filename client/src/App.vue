@@ -20,6 +20,7 @@ onMounted(() => {
   <div id="app">
     <!-- Simple global nav -->
     <nav v-if="isLoggedIn">
+      <RouterLink v-if="auth.user?.role == 'admin'" to="/admin">Admin</RouterLink>
       <RouterLink to="/">Home</RouterLink>
       <button @click="auth.logout()">Logout</button>
     </nav>
