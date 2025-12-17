@@ -5,10 +5,21 @@ const auth = useAuthStore()
 </script>
 
 <template>
-    <div>
+    <div class="dashboard">
         <h1>Dashboard</h1>
         <p>Logged in ✅</p>
         <button v-if="auth.isAdmin">Admin Button</button>
         <button @click="auth.logout">Logout</button>
     </div>
 </template>
+<style scoped>
+.dashboard {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+</style>

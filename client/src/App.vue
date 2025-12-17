@@ -17,12 +17,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="app">
+  <div>
     <!-- Simple global nav -->
     <nav v-if="isLoggedIn">
       <RouterLink v-if="auth.user?.role == 'admin'" to="/admin">Admin</RouterLink>
       <RouterLink to="/">Home</RouterLink>
-      <button @click="auth.logout()">Logout</button>
+      <button @click="auth.logout()" class="logout-button">Logout</button>
     </nav>
 
     <!-- Route outlet -->
@@ -32,13 +32,14 @@ onMounted(() => {
 </template>
 
 <style>
-#app {
-  padding: 1rem;
-}
-
 nav {
   display: flex;
   gap: 1rem;
+  padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.logout-button {
+  margin-left: auto;
 }
 </style>
