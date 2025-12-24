@@ -7,15 +7,14 @@ const auth = useAuthStore()
 <template>
     <div class="dashboard">
         <h1>Dashboard</h1>
+        <h2>Welcome, {{ auth.user.username }}</h2>
         <p>Logged in ✅</p>
         <button v-if="auth.isAdmin">Admin Button</button>
-        <button @click="auth.logout">Logout</button>
+        <!-- <button @click="auth.logout">Logout</button> -->
     </div>
 </template>
 <style scoped>
 .dashboard {
-    width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;

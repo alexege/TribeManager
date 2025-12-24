@@ -3,9 +3,10 @@ import { useAuthStore } from "../stores/auth.store";
 
 import AdminDashboard from "../views/AdminDashboard.vue";
 import ModerationPanel from "../views/ModerationPanel.vue";
-import LoginView from "../views/LoginView.vue";
+import LoginView from "../views/LoginRegView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import DashboardView from "../views/DashboardView.vue";
+import TribeTrackerView from "../views/TribeTrackerView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -45,6 +46,12 @@ const router = createRouter({
       path: "/dashboard",
       name: "Dashboard",
       component: DashboardView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/tracker",
+      name: "tracker",
+      component: TribeTrackerView,
       meta: { requiresAuth: true },
     },
   ],

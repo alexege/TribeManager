@@ -1,3 +1,4 @@
+/* Used to create login users and manage authentication */
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "../services/api";

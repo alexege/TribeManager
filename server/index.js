@@ -4,6 +4,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import tribeRoutes from "./routes/tribe.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import playerRoutes from "./routes/player.routes.js";
 
 dotenv.config();
 
@@ -19,7 +22,11 @@ app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
+
 app.use("/api/auth", authRoutes);
+app.use("/api/tribes", tribeRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/players", playerRoutes);
 
 const PORT = process.env.PORT || 3000;
 
