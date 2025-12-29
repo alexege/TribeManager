@@ -176,6 +176,9 @@ const handleDeleteTribe = async (tribeId) => {
 ========================= */
 const handleAddPlayer = async tribeId => {
     ensureTribeState(tribeId);
+
+    if (!newPlayer[tribeId].inGameName.trim() || !newPlayer[tribeId].tribeId || !newPlayer[tribeId].dateSeen) return;
+
     await addPlayer(tribeId, newPlayer[tribeId]);
     newPlayer[tribeId] = {
         inGameName: "",
@@ -403,9 +406,8 @@ const closeAllMenus = () =>
         <div v-for="(tribe, i) in tribes" :key="tribe._id" class="tribe-collapsible"
             :class="{ 'menu-active': menuOpen[tribe._id] }">
             <!-- Collapsible Header with Menu -->
-            <div class="header" :class="{ 'header-open': openTribes[tribe._id] }"
-                :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }">
-                <!-- <div class="header"> -->
+            <div class="header" :class="{ 'header-open': openTribes[tribe._id] }">
+                <!-- :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }" -->
                 <!-- <div class="header"> -->
                 <div class="header-title" @click="handleHeaderClick(tribe._id)">
                     <template v-if="editingTribe[tribe._id]">
@@ -563,7 +565,7 @@ const closeAllMenus = () =>
                         <input type="date" v-model="newPlayer[tribe._id].dateSeen" />
                         <input v-model="newPlayer[tribe._id].notes" placeholder="Notes" />
                         <input type="number" v-model.number="newPlayer[tribe._id].level" placeholder="Level" min="1" />
-                        <button type="submit">Add Player</button>
+                        <button type="submit" class="add-player-btn">Add Player</button>
                     </form>
                 </div>
             </transition>
@@ -586,7 +588,7 @@ const closeAllMenus = () =>
 .global-players-header {
     display: flex;
     justify-content: space-between;
-    background: rgba(0, 0, 0, 0.932);
+    background: var(--orange);
     padding: 10px;
     cursor: pointer;
     margin-bottom: .5em;
@@ -624,6 +626,7 @@ input {
 }
 
 .tribes-container {
+    min-width: 80vw;
     width: 100%;
     max-width: 1000px;
     margin: 0 auto;
@@ -656,7 +659,7 @@ input {
 }
 
 .add-tribe button {
-    background: #3498db;
+    background: var(--orange);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -665,7 +668,7 @@ input {
 }
 
 .add-tribe button:hover {
-    background: #2980b9;
+    background: var(--orange-soft);
 }
 
 .tribe-collapsible {
@@ -682,6 +685,7 @@ input {
 }
 
 .tribe-collapsible>.header {
+    background: var(--orange);
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
@@ -797,6 +801,7 @@ input {
 
 .content {
     padding: 12px;
+    background-color: var(--glass-dark);
 }
 
 .search-bar {
@@ -833,7 +838,7 @@ input {
     padding: 6px 8px;
     border-bottom: 1px solid #eee;
     word-break: break-word;
-    background-color: #00000067
+    background-color: var(--void-black);
 }
 
 .cell.actions {
@@ -874,7 +879,7 @@ input {
 }
 
 .add-player-form button {
-    background: #2ecc71;
+    background: var(--orange);
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -883,7 +888,7 @@ input {
 }
 
 .add-player-form button:hover {
-    background: #27ae60;
+    background: var(--orange-soft);
 }
 
 .collapse-enter-active,
@@ -914,14 +919,14 @@ input {
 .global-controls button {
     padding: 6px 12px;
     border: none;
-    background: #3498db;
+    background: var(--orange);
     color: white;
     border-radius: 4px;
     cursor: pointer;
 }
 
 .global-controls button:hover {
-    background: #2980b9;
+    background: var(--orange-soft);
 }
 
 select {

@@ -4,7 +4,6 @@ import { useAuthStore } from "../stores/auth.store";
 import AdminDashboard from "../views/AdminDashboard.vue";
 import ModerationPanel from "../views/ModerationPanel.vue";
 import LoginView from "../views/LoginRegView.vue";
-import RegisterView from "../views/RegisterView.vue";
 import DashboardView from "../views/DashboardView.vue";
 import TribeTrackerView from "../views/TribeTrackerView.vue";
 
@@ -36,11 +35,6 @@ const router = createRouter({
       path: "/login",
       name: "Login",
       component: LoginView,
-    },
-    {
-      path: "/register",
-      name: "Register",
-      component: RegisterView,
     },
     {
       path: "/dashboard",

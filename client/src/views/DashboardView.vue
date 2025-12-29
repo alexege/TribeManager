@@ -7,7 +7,12 @@ const auth = useAuthStore()
 <template>
     <div class="dashboard">
         <h1>Dashboard</h1>
-        <h2>Welcome, {{ auth.user.username }}</h2>
+        <h2>Welcome, {{ auth.user.name || auth.user.username }}</h2>
+        <p>Your roles:
+            <span v-for="role in auth.user.role" :key="role">
+                {{ role }}
+            </span>
+        </p>
         <p>Logged in ✅</p>
         <button v-if="auth.isAdmin">Admin Button</button>
         <!-- <button @click="auth.logout">Logout</button> -->

@@ -23,9 +23,9 @@ onMounted(() => {
 <template>
 
   <AppHeader />
-  <AppNav v-if="!router.meta?.hideNav && auth.isLoggedIn" />
+  <AppNav v-if="!auth.isLoggedIn" />
 
-  <main class="app-content">
+  <main class="app-container">
     <div v-if="!auth.authReady">Loading...</div>
     <RouterView v-else />
   </main>
@@ -36,7 +36,7 @@ onMounted(() => {
 
 <style>
 .app-container {
-  min-height: 100vh;
+  /* min-height: 100vh;
   width: 100%;
   margin: 0 auto;
   display: flex;
@@ -44,7 +44,8 @@ onMounted(() => {
   align-items: center;
   flex-direction: column;
   box-sizing: border-box;
-  padding: 2rem;
+  padding: 2rem; */
+  margin: 0 auto;
 }
 
 nav {

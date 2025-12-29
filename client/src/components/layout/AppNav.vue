@@ -36,8 +36,7 @@ const isAuthed = computed(() => auth.isAuthenticated)
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: hsl(150, 60%, 95%);
-    border-bottom: 1px solid hsl(150, 30%, 85%);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-item {
@@ -45,7 +44,7 @@ const isAuthed = computed(() => auth.isAuthenticated)
     border-radius: 999px;
     font-size: 0.85rem;
     text-decoration: none;
-    color: #333;
+    color: white;
     cursor: pointer;
     transition: background 0.15s ease;
 }
@@ -55,8 +54,8 @@ const isAuthed = computed(() => auth.isAuthenticated)
 }
 
 .router-link-active {
-    background: hsl(150, 60%, 85%);
     font-weight: 500;
+    color: #ff4500;
 }
 
 .ghost {
