@@ -28,7 +28,7 @@ export const usePlayerStore = defineStore("players", {
       if (i !== -1) this.players[i] = res.data;
     },
 
-    async deletePlayer(id) {
+    async deletePlayerFromStore(id) {
       await axios.delete(`/api/players/${id}`);
       this.players = this.players.filter((p) => p._id !== id);
     },

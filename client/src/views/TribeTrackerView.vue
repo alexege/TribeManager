@@ -5,7 +5,8 @@ import {
     computed,
     onMounted,
     onBeforeUnmount,
-    nextTick
+    nextTick,
+    watch
 } from "vue";
 import { storeToRefs } from "pinia";
 
@@ -22,7 +23,8 @@ const {
     addPlayer,
     updatePlayer,
     fetchPlayers,
-    removePlayersByTribe
+    removePlayersByTribe,
+    deletePlayerFromStore
 } = playerStore;
 
 const {
@@ -86,6 +88,38 @@ const ensureTribeState = id => {
     };
 };
 
+
+// Add this watcher after your state declarations
+watch(globalSearch, (newVal) => {
+    if (newVal.trim()) {
+        // Close all tribes first
+        tribes.value.forEach(t => {
+            ensureTribeState(t._id);
+            openTribes[t._id] = false;
+        });
+
+        // Open only tribes that have matching players
+        const matchingPlayers = players.value.filter(
+            u => searchableText(u).includes(newVal.toLowerCase())
+        );
+
+        const tribesToOpen = new Set(
+            matchingPlayers.map(p => p.tribeId).filter(Boolean)
+        );
+
+        tribesToOpen.forEach(tribeId => {
+            ensureTribeState(tribeId);
+            openTribes[tribeId] = true;
+        });
+    } else {
+        // When search is cleared, close all tribes
+        tribes.value.forEach(t => {
+            ensureTribeState(t._id);
+            openTribes[t._id] = false;
+        });
+    }
+});
+
 /* =========================
    TRIBES
 ========================= */
@@ -97,6 +131,10 @@ const toggleTribe = id => {
 const toggleAllTribes = () => {
     allTribesOpen.value = !allTribesOpen.value;
     tribes.value.forEach(t => (openTribes[t._id] = allTribesOpen.value));
+};
+
+const toggleGlobalPlayers = () => {
+    globalPlayersOpen.value = !globalPlayersOpen.value;
 };
 
 const handleHeaderClick = id => toggleTribe(id);
@@ -119,6 +157,18 @@ const handleAddTribe = async () => {
     if (!newTribeName.value.trim()) return;
     await addTribe(newTribeName.value.trim());
     newTribeName.value = "";
+};
+
+const handleDeleteTribe = async (tribeId) => {
+    if (confirm('Are you sure you want to delete this tribe and all its players?')) {
+        await removePlayersByTribe(tribeId);
+        await deleteTribe(tribeId);
+        // Clean up state
+        delete openTribes[tribeId];
+        delete menuOpen[tribeId];
+        delete tribeSort[tribeId];
+        delete newPlayer[tribeId];
+    }
 };
 
 /* =========================
@@ -153,6 +203,16 @@ const savePlayer = async (id, scope) => {
     delete editingPlayer[scope][id];
 };
 
+const deletePlayer = async (playerId, scope) => {
+    if (confirm('Are you sure you want to delete this player?')) {
+        await deletePlayerFromStore(playerId);
+        // Clean up any editing state
+        if (editingPlayer[scope][playerId]) {
+            delete editingPlayer[scope][playerId];
+        }
+    }
+};
+
 /* =========================
    SORTING
 ========================= */
@@ -163,6 +223,7 @@ const sortBy = (tribeId, key) => {
 };
 
 const sortIndicator = (tribeId, key) => {
+    ensureTribeState(tribeId);
     const s = tribeSort[tribeId];
     return s.key === key ? (s.dir === "asc" ? "▲" : "▼") : "";
 };
@@ -342,7 +403,8 @@ const closeAllMenus = () =>
         <div v-for="(tribe, i) in tribes" :key="tribe._id" class="tribe-collapsible"
             :class="{ 'menu-active': menuOpen[tribe._id] }">
             <!-- Collapsible Header with Menu -->
-            <div class="header" :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }">
+            <div class="header" :class="{ 'header-open': openTribes[tribe._id] }"
+                :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }">
                 <!-- <div class="header"> -->
                 <!-- <div class="header"> -->
                 <div class="header-title" @click="handleHeaderClick(tribe._id)">
@@ -374,7 +436,7 @@ const closeAllMenus = () =>
             </div>
             <transition name="collapse">
                 <div v-if="openTribes[tribe._id]" class="content"
-                    :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 94%)` }">
+                    :style="{ backgroundColor: `hsla(${(i * 37) % 360}, 70%, 94%, 0.25)` }">
                     <!-- Search Players -->
                     <!-- <div class="search-bar">
             <input v-model="tribeSearch[tribe._id]" placeholder="Search players..." />
@@ -524,7 +586,7 @@ const closeAllMenus = () =>
 .global-players-header {
     display: flex;
     justify-content: space-between;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.932);
     padding: 10px;
     cursor: pointer;
     margin-bottom: .5em;
@@ -619,6 +681,18 @@ input {
     z-index: 100;
 }
 
+.tribe-collapsible>.header {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.tribe-collapsible>.content {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -629,8 +703,13 @@ input {
     font-weight: bold;
     cursor: pointer;
     user-select: none;
-    background: rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid #ddd;
+    /* background: rgba(0, 0, 0, 0.05); */
+    background: rgba(0, 0, 0, 0.918);
+}
+
+.header.header-open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .header:hover {
@@ -754,6 +833,7 @@ input {
     padding: 6px 8px;
     border-bottom: 1px solid #eee;
     word-break: break-word;
+    background-color: #00000067
 }
 
 .cell.actions {

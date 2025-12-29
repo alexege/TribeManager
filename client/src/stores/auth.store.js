@@ -28,6 +28,26 @@ export const useAuthStore = defineStore("auth", () => {
   // ─────────────
   // ACTIONS
   // ─────────────
+  const checkAuth = async () => {
+    if (authReady.value) return;
+
+    try {
+      if (!token.value) return;
+
+      // Try refreshing token first
+      const refresh = await api.post("/auth/refresh");
+      token.value = refresh.data.token;
+      localStorage.setItem("token", token.value);
+
+      // Fetch user
+      const res = await api.get("/auth/me");
+      user.value = res.data;
+    } catch {
+      await logout(false);
+    } finally {
+      authReady.value = true;
+    }
+  };
 
   // 🔁 Restore session on full page refresh
   const restoreSession = async () => {
@@ -116,6 +136,7 @@ export const useAuthStore = defineStore("auth", () => {
     isModerator,
 
     // actions
+    checkAuth,
     restoreSession,
     login,
     register,

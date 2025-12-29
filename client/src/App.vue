@@ -3,6 +3,10 @@ import { computed, onMounted } from 'vue'
 import { useAuthStore } from './stores/auth.store'
 import { useRouter } from 'vue-router'
 
+import AppHeader from './components/layout/AppHeader.vue'
+import AppNav from './components/layout/AppNav.vue'
+import AppFooter from './components/layout/AppFooter.vue'
+
 const auth = useAuthStore()
 const router = useRouter()
 
@@ -17,27 +21,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class=app-container>
 
-    <span v-if="isLoggedIn">Logged in as: {{ auth.user?.email }}</span>
+  <AppHeader />
+  <AppNav v-if="!router.meta?.hideNav && auth.isLoggedIn" />
 
-    <!-- Simple global nav -->
-    <nav v-if="isLoggedIn">
-      <RouterLink v-if="auth.user?.role == 'admin'" to="/admin">Admin</RouterLink>
-      <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/tracker">Tracker</RouterLink>
-      <button @click="auth.logout()" class="logout-button">Logout</button>
-    </nav>
-
-    <!-- Route outlet -->
+  <main class="app-content">
     <div v-if="!auth.authReady">Loading...</div>
     <RouterView v-else />
-  </div>
+  </main>
+
+  <AppFooter />
+
 </template>
 
 <style>
 .app-container {
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
   margin: 0 auto;
   display: flex;
@@ -57,5 +56,10 @@ nav {
 
 .logout-button {
   margin-left: auto;
+}
+
+.page {
+  padding: 1rem;
+  min-height: calc(100vh - 120px);
 }
 </style>
