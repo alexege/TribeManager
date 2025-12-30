@@ -1,403 +1,162 @@
-import { defineStore, storeToRefs } from "pinia";
-import axios from "axios";
-
-const API_URL = "http://127.0.0.1:8080/api";
-
+import { defineStore } from "pinia";
 export const useMapStore = defineStore("map", {
   state: () => ({
-    maps: [
-      {
-        id: 1,
-        title: "map1",
-        name: "The Island",
-        points: [],
-        img: "../../assets/maps/TheIsland.png",
-      },
-      {
-        id: 2,
-        title: "map2",
-        name: "The Center",
-        points: [],
-        img: "../../assets/maps/TheCenterMap.jpg",
-      },
-      {
-        id: 3,
-        title: "map3",
-        name: "Scorched Earth",
-        points: [],
-        img: "../../assets/maps/ScorchedEarth.png",
-      },
-      {
-        id: 4,
-        title: "map4",
-        name: "Scorched Earth",
-        points: [],
-        img: "../../assets/maps/ScorchedEarth.png",
-      },
-      {
-        id: 5,
-        title: "map5",
-        name: "Scorched Earth",
-        points: [],
-        img: "../../assets/maps/ScorchedEarth.png",
-      },
-      {
-        id: 6,
-        title: "map6",
-        name: "Aberration",
-        points: [],
-        img: "../../assets/maps/Aberration.png",
-      },
-      {
-        id: 7,
-        title: "map7",
-        name: "Astraeos",
-        points: [],
-        img: "../../assets/maps/Astraeos.png",
-      },
-    ],
+    activeMapId: null,
 
-    map: null,
-    categories: [
+    /* Hardcoded base maps (parent maps) */
+    baseMaps: [
+      { name: "The Island", img: "../../src/assets/images/maps/TheIsland.png" },
       {
-        name: "Raid-Target",
-        icon: "colorize",
+        name: "The Center",
+        img: "../../src/assets/images/maps/TheCenterMap.jpg",
       },
       {
-        name: "Turrets",
-        icon: "warning",
+        name: "Scorched Earth",
+        img: "../../src/assets/images/maps/ScorchedEarth.png",
       },
       {
-        name: "Resource",
-        icon: "target",
+        name: "Extinction",
+        img: "../../src/assets/images/maps/Extinction.png",
       },
       {
-        name: "Obelisk",
-        icon: "radio_button_checked",
+        name: "Aberration",
+        img: "../../src/assets/images/maps/Aberration.png",
       },
-      {
-        name: "Transmitter",
-        icon: "cell_tower",
-      },
-      {
-        name: "Death-Marker",
-        icon: "skull",
-      },
-      {
-        name: "Tame",
-        icon: "pets",
-      },
-      {
-        name: "Artifact",
-        icon: "trophy",
-      },
-      {
-        name: "Navigation",
-        icon: "location_on",
-      },
-      {
-        name: "Waypoint",
-        icon: "home_pin",
-      },
+      { name: "Ragnarok", img: "../../src/assets/images/maps/Ragnarok.png" },
+      { name: "Valguero", img: "../../src/assets/images/maps/Valguero.png" },
     ],
-    points: [],
-    point: [],
-    loading: false,
-    error: null,
+    /* Map instances */
+    mapsById: {}, // map instances keyed by ID
+    mapIds: [], // list of instance IDs
+    /* Points (normalized) */
+    pointsById: {},
+    pointIdsByMap: {},
+
+    categories: [
+      { name: "Raid-Target", icon: "colorize" },
+      { name: "Turrets", icon: "warning" },
+      { name: "Resource", icon: "target" },
+      { name: "Obelisk", icon: "radio_button_checked" },
+      { name: "Transmitter", icon: "cell_tower" },
+      { name: "Death-Marker", icon: "skull" },
+      { name: "Tame", icon: "pets" },
+      { name: "Artifact", icon: "trophy" },
+      { name: "Navigation", icon: "location_on" },
+      { name: "Waypoint", icon: "home_pin" },
+    ],
   }),
   getters: {
-    allMaps() {
-      return this.maps;
+    activeMap(state) {
+      if (!state.activeMapId) return null;
+      const map = state.mapsById[state.activeMapId];
+      if (!map) return null;
+
+      return {
+        ...map,
+        points: (state.pointIdsByMap[state.activeMapId] || []).map(
+          (pid) => state.pointsById[pid]
+        ),
+      };
     },
-    allPoints() {
-      return this.points;
+
+    groupedMaps(state) {
+      return state.mapIds.reduce((acc, id) => {
+        const map = state.mapsById[id];
+        let group = acc.find((g) => g.name === map.baseMapName);
+        if (!group) {
+          group = { name: map.baseMapName, img: map.img, maps: [] };
+          acc.push(group);
+        }
+        group.maps.push({
+          ...map,
+          points: (state.pointIdsByMap[id] || []).map(
+            (pid) => state.pointsById[pid]
+          ),
+        });
+        return acc;
+      }, []);
+    },
+    getMapById: (state) => {
+      return (mapId) => {
+        const map = state.mapsById[mapId];
+        if (!map) return null;
+
+        return {
+          ...map,
+          points: (state.pointIdsByMap[mapId] || []).map(
+            (pid) => state.pointsById[pid]
+          ),
+        };
+      };
     },
   },
   actions: {
-    async createMap(map) {
-      console.log("map passed to store is:", map);
-
-      this.loading = true;
-      this.error = null;
-
-      try {
-        const res = await axios.post(`${API_URL}/maps`, map);
-        console.log("response was:", res);
-        console.log("response was:", res.data);
-        const newMap = res.data;
-        console.log("Map created:", newMap);
-      } catch (e) {
-        console.log("Error creating map:", e);
-      }
-
-      // console.log('pinia creating map: ', JSON.stringify(map))
-      // try {
-      //   //Pinia Logic
-
-      //   const res = await axios.post(`${API_URL}/maps`, map)
-      //   console.log('result of creating map: ', res.data)
-      //   const map = res.data
-
-      //   this.maps.push(map)
-      // } catch (error) {
-      //   this.error = error
-      //   console.log('an error was found', error)
-      // } finally {
-      //   this.loading = false
-      // }
+    setActiveMap(id) {
+      this.activeMapId = id;
     },
-    async getAllMaps() {
-      this.loading = true;
-      this.error = null;
-      try {
-        //Pinia Logic
-        return [...this.maps];
-      } catch (error) {
-        this.error = error;
-        console.error(error);
-      } finally {
-        this.loading = false;
+
+    addMapInstance({ baseMapName, title }) {
+      const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
+      if (!baseMap) return;
+
+      const id = Date.now();
+
+      this.mapsById[id] = {
+        id,
+        baseMapName,
+        title,
+        img: baseMap.img,
+      };
+
+      this.mapIds.push(id);
+      this.pointIdsByMap[id] = [];
+
+      if (!this.activeMapId) {
+        this.activeMapId = id;
       }
     },
-    async createPoint(mapId, point) {
-      this.loading = true;
-      this.error = null;
-      try {
-        //Pinia Logic
-        const map = this.maps.find((map) => map.id === mapId);
-        if (map) {
-          map.points.push(point); // this.points.push(point)
-        }
-      } catch (error) {
-        this.error = error;
-      } finally {
-        this.loading = false;
-      }
+
+    /* Add new map instance from a base map */
+    addMapInstance({ baseMapName, title }) {
+      const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
+      if (!baseMap) return;
+      const id = Date.now(); // unique ID
+      this.mapsById[id] = {
+        id,
+        baseMapName,
+        title,
+        img: baseMap.img,
+      };
+      this.mapIds.push(id);
+      this.pointIdsByMap[id] = [];
     },
-    async updatePoint(mapId, updatedPoint) {
-      this.loading = true;
-      this.error = null;
-      try {
-        console.log("this is an attempte to update the ppoint", updatedPoint); //Pinia Logic
-        const map = this.maps.find((map) => map.id === mapId);
-        if (map) {
-          const pointIndex = map.points.findIndex(
-            (point) => point.name === updatedPoint.name
-          ); //Update this to use id when implemented
-          if (pointIndex !== -1) {
-            // Update the properties of the point
-            map.points[pointIndex] = {
-              ...map.points[pointIndex],
-              ...updatedPoint,
-            };
-          } else {
-            console.error(
-              `Point with id ${updatedPoint.id} not found in map ID: ${mapId}`
-            );
-          }
-        } else {
-          console.log(`Map with id: ${mapId} not found`);
-        }
-      } catch (error) {
-        this.error = error;
-        console.error(error);
-      } finally {
-        this.loading = false;
-      }
+    deleteMapInstance(mapId) {
+      const pointIds = this.pointIdsByMap[mapId] || [];
+      pointIds.forEach((pid) => delete this.pointsById[pid]);
+      delete this.mapsById[mapId];
+      delete this.pointIdsByMap[mapId];
+      this.mapIds = this.mapIds.filter((id) => id !== mapId);
     },
-    async deletePoint(mapId, pointId) {
-      this.loading = true;
-      this.error = null;
-      try {
-        const map = this.maps.find((map) => map.id === mapId);
-        if (map) {
-          const pointIndex = map.points.findIndex(
-            (point) => point.name === pointId.name
-          ); //TODO: Update to use id
-          if (pointIndex !== -1) {
-            map.points.splice(pointIndex, 1);
-            console.log(`Deleted point: ${pointId} from map ID: ${mapId}`);
-          } else {
-            console.log(
-              `Point with id ${pointId} not found in map ID: ${mapId}`
-            );
-          }
-        } else {
-          console.error(`Map with Id: ${mapId} not found`);
-        }
-      } catch (error) {
-        this.error = error;
-        console.error(error);
-      } finally {
-        this.loading = false;
-      }
+    /* Points */
+    createPoint(mapId, point) {
+      const pointId = Date.now();
+      this.pointsById[pointId] = { id: pointId, ...point };
+      if (!this.pointIdsByMap[mapId]) this.pointIdsByMap[mapId] = [];
+      this.pointIdsByMap[mapId].push(pointId);
     },
-    async getAllPoints() {
-      this.loading = true;
-      this.error = null;
-      try {
-        //Pinia Logic
-        return [...this.points];
-      } catch (error) {
-        this.error = error;
-        console.error(error);
-      } finally {
-        this.loading = false;
-      }
+    updatePoint(pointId, updates) {
+      if (!this.pointsById[pointId]) return;
+      this.pointsById[pointId] = { ...this.pointsById[pointId], ...updates };
+    },
+    deletePoint(mapId, pointId) {
+      delete this.pointsById[pointId];
+      this.pointIdsByMap[mapId] = this.pointIdsByMap[mapId].filter(
+        (id) => id !== pointId
+      );
+    },
+    updateMapName(mapId, newTitle) {
+      if (!this.mapsById[mapId]) return;
+      this.mapsById[mapId].title = newTitle;
     },
   },
 });
-
-// import { defineStore, storeToRefs } from 'pinia'
-// export const useMapStore = defineStore('map', {
-//   state: () => ({
-//     maps: [
-//       {
-//         id: 1,
-//         name: 'map1',
-//         points: [
-//           {
-//             id: 1,
-//             name: 'point 1',
-//             category: 'resource',
-//             x: 50,
-//             y: 50
-//           },
-//           {
-//             id: 2,
-//             name: 'point 2',
-//             category: 'enemy',
-//             x: 20,
-//             y: 120
-//           }
-//         ],
-//         img: '/assets/maps/TheIsland.png'
-//       } // {
-//       //     id: 2,
-//       //     name: 'map2',
-//       //     points: [
-//       //         {
-//       //             name: 'point 3',
-//       //             category: 'resource',
-//       //             x: 5,
-//       //             y: 20
-//       //         },
-//       //         {
-//       //             name: 'point 4',
-//       //             category: 'enemy',
-//       //             x: 4,
-//       //             y: 4
-//       //         }
-//       //     ],
-//       //     img: '/airport_map.png'
-//       // }
-//     ],
-//     map: null,
-//     points: [
-//       {
-//         name: 'point 1',
-//         category: 'resource',
-//         x: 50,
-//         y: 50
-//       },
-//       {
-//         name: 'point 2',
-//         category: 'enemy',
-//         x: 20,
-//         y: 120
-//       }
-//     ],
-//     point: [],
-//     loading: false,
-//     error: null
-//   }),
-//   getters: {
-//     allMaps() {
-//       return this.maps
-//     },
-//     allPoints() {
-//       return this.points
-//     }
-//   },
-//   actions: {
-//     async createMap(map) {
-//       this.loading = true
-//       this.error = null
-//       try {
-//         //Pinia Logic
-//         this.maps.push(map)
-//       } catch (error) {
-//         this.error = error
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-//     async getAllMaps() {
-//       this.loading = true
-//       this.error = null
-//       try {
-//         //Pinia Logic
-//         return [...this.maps]
-//       } catch (error) {
-//         this.error = error
-//         console.error(error)
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-//     async createPoint(mapId, x, y) {
-//       this.loading = true
-//       this.error = null
-//       try {
-//         console.log(`creating point at: ${x}, ${y}`) //Pinia Logic
-//         const map = this.maps.find((map) => map.id === mapId)
-//         if (map) {
-//           map.points.push({
-//             x,
-//             y
-//           }) // this.points.push(point)
-//         }
-//       } catch (error) {
-//         this.error = error
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-//     async deletePoint(mapId, pointId) {
-//       this.loading = true
-//       this.error = null
-//       try {
-//         const map = this.maps.find((map) => map.id === mapId)
-//         if (map) {
-//           const pointIndex = map.points.findIndex((point) => point.id === pointId)
-//           if (pointIndex !== -1) {
-//             map.points.splice(pointIndex, 1)
-//             console.log(`Deleted point: ${pointId} from map ID: ${mapId}`)
-//           } else {
-//             console.log(`Point with id ${pointId} not found in map ID: ${mapId}`)
-//           }
-//         } else {
-//           console.error(`Map with Id: ${mapId} not found`)
-//         }
-//       } catch (error) {
-//         this.error = error
-//         console.error(error)
-//       } finally {
-//         this.loading = false
-//       }
-//     },
-//     async getAllPoints() {
-//       this.loading = true
-//       this.error = null
-//       try {
-//         //Pinia Logic
-//         return [...this.points]
-//       } catch (error) {
-//         this.error = error
-//         console.error(error)
-//       } finally {
-//         this.loading = false
-//       }
-//     }
-//   }
-// })

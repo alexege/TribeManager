@@ -1,41 +1,38 @@
 <script setup>
+import { ref, computed, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMapStore } from '@/stores/map.store'
-import { ref, computed, watchEffect } from 'vue'
-import Map from '@/components/maps/Map.vue'
-
-/* Store */
+import Map from '@/components/map/map.vue'
+/* =====================
+   Store
+===================== */
 const mapStore = useMapStore()
-const { groupedMaps, baseMaps, activeMap, activeMapId } = storeToRefs(mapStore)
-
-/* State */
-const selectedMapName = ref('The Island')
+const { groupedMaps, baseMaps } = storeToRefs(mapStore)
+/* =====================
+   State
+===================== */
+const selectedMapName = ref('')
 const newMapTitle = ref('')
-
-/* Auto-select first base map */
+/* =====================
+   Auto-select first base map
+===================== */
 watchEffect(() => {
     if (!selectedMapName.value && baseMaps.value.length) {
         selectedMapName.value = baseMaps.value[0].name
     }
 })
-
-const filteredMapIds = computed(() => {
-    return mapStore.mapIds.filter(id => {
-        const map = mapStore.mapsById[id]
-        return map?.baseMapName === selectedMapName.value
-    })
-})
-
-
-/* Derived */
+/* =====================
+   Derived
+===================== */
 const renderedMaps = computed(() => {
     const group = groupedMaps.value.find(
         g => g.name === selectedMapName.value
     )
     return group?.maps ?? []
 })
-
-/* Actions */
+/* =====================
+   Actions
+===================== */
 const addMapInstance = () => {
     if (!newMapTitle.value || !selectedMapName.value) return
     mapStore.addMapInstance({
@@ -44,14 +41,14 @@ const addMapInstance = () => {
     })
     newMapTitle.value = ''
 }
-
 const deleteMapInstance = (mapId) => {
     const confirmed = confirm('Are you sure you want to delete this map?')
     if (!confirmed) return
     mapStore.deleteMapInstance(mapId)
 }
-
-/* Points */
+/* =====================
+   Points
+===================== */
 const addPoint = (mapId) => {
     const title = prompt('Point title:')
     if (!title) return
@@ -75,7 +72,6 @@ const deletePoint = (mapId, pointId) => {
                 <p>{{ base.name }}</p>
             </div>
         </div>
-
         <!-- Add Map Instance -->
         <div class="addMap">
             <h3>Add a New Map Instance</h3>
@@ -87,12 +83,13 @@ const deletePoint = (mapId, pointId) => {
             </select>
             <button @click="addMapInstance">Add Map</button>
         </div>
-
-        <!-- Map List -->
-        <div class="map-layout">
-            <Map v-if="activeMap" :map="activeMap" :activeBaseMap="selectedMapName" :key="activeMap.id" />
+        <!-- Render Map Instances -->
+        <div v-for="map in renderedMaps" :key="map.id" class="map-wrapper">
+            <button class="delete-map-btn" @click="deleteMapInstance(map.id)">
+                ✕ Delete
+            </button>
+            <Map :map="map" />
         </div>
-
     </div>
 </template>
 <style scoped>
@@ -171,76 +168,3 @@ const deletePoint = (mapId, pointId) => {
     opacity: 0.85;
 }
 </style>
-
-<!-- <style scoped>
-.title {
-    text-align: center;
-    padding: 1em;
-    font-size: 2em;
-}
-
-/* .container {
-    margin: 0 auto;
-    margin-bottom: 1em;
-    height: 100vh;
-}
-.addMap {
-    display: flex;
-    flex-direction: column;
-    outline: 5px solid red;
-} */
-.container {
-    margin: 0 auto;
-    /* height: 100vh; */
-    display: flex;
-    flex-direction: column;
-    /* gap: 1em; */
-    background-color: black;
-}
-
-/* Thumbnail Styles */
-.thumbnail-list {
-    display: flex;
-    justify-content: center;
-    gap: 1em;
-    overflow-x: auto;
-    padding: 1em 0;
-    color: white;
-}
-
-.thumbnail {
-    text-align: center;
-    cursor: pointer;
-    border: 2px solid transparent;
-    padding: 0.5em;
-    border-radius: 6px;
-    transition: border 0.3s;
-}
-
-.thumbnail img {
-    width: 100px;
-    height: auto;
-    object-fit: cover;
-}
-
-.thumbnail.active {
-    /* border-color: #007BFF; */
-    /* color: black; */
-    color: cyan;
-    border-color: cyan;
-    background-color: rgba(255, 255, 255, 0.35);
-}
-
-.addMap {
-    display: flex;
-    flex-direction: column;
-    width: 10em;
-    margin: 0 auto;
-    text-align: center;
-}
-
-.addMap select,
-.addMap button {
-    width: 100%;
-}
-</style> -->

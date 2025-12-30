@@ -1,17 +1,19 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { storeToRefs } from 'pinia'
+import { useMapStore } from '@/stores/map.store'
+
 import Point from '@/components/maps/Point.vue'
+import Tab from '@/components/tabs/Tab.vue'
 import Tabs from '@/components/tabs/Tabs.vue'
 import AddPoint from '@/components/modals/AddPoint.vue'
 import EditPoint from '@/components/modals/EditPoint.vue'
 
-import { useMapStore } from '@/stores/map.store'
-
+// ===== Props & Store =====
+const props = defineProps({ map: Object, activeBaseMap: String })
 const mapStore = useMapStore()
-const { createPoint, deletePoint, updatePoint } = mapStore
-const categories = mapStore.categories
-const props = defineProps(['map'])
+const { createPoint, deletePoint, updatePoint, categories, activeMapId } = mapStore
+
+// ===== Mouse & Map Logic =====
 const mousePosition = ref('Original X: 0, Y: 0')
 const picW = ref(0)
 const picH = ref(0)
@@ -20,8 +22,27 @@ const minScale = 0.5 // Minimum scale (original size)
 const isDragging = ref(false)
 const dragStartPosition = ref({ x: 0, y: 0 })
 const translate = ref({ x: 0, y: 0 }) // Track the translation
-const imageSrc = props.map.img // Use the image source from props
-// Crosshairs
+const parentMousePosition = ref({ x: 0, y: 0 })
+const resetting = ref(false)
+const isHovering = ref(false)
+
+// ===== Point State =====
+const point = ref({})
+const activePoint = ref(null)
+const selectedPoint = ref(null)
+const hoverPoint = ref(null)
+const activeMap = ref(null)
+
+// ===== Modals =====
+const isModalOpen = ref(false)
+const showEditModal = ref(false)
+const activeTabIndex = ref(0)
+
+// ===== Computed =====
+const imageSrc = computed(() => props.map.img)
+const transitionStyle = computed(() => resetting.value ? 'transform 0.3s ease' : 'none')
+
+// ===== Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
     isDragging.value = true
@@ -30,7 +51,6 @@ const onMouseDown = (event) => {
         y: event.offsetY - translate.value.y
     }
 }
-const parentMousePosition = ref({ x: 0, y: 0 })
 const onContainerMouseMove = (event) => {
     const container = event.target.closest('.map')
     // const container = document.querySelector('.map')
@@ -42,7 +62,6 @@ const onContainerMouseMove = (event) => {
     }
 }
 const onMouseMove = (event) => {
-    // console.log(`offsetX: ${event.offsetX}, offsetY: ${event.offsetY}`)
 
     const mapWidth = event.target.getBoundingClientRect().width
     const mapHeight = event.target.getBoundingClientRect().height
@@ -51,9 +70,11 @@ const onMouseMove = (event) => {
     picW.value = event.offsetX / mapWidth * 100 * scale.value;
     picH.value = event.offsetY / mapHeight * 100 * scale.value;
     mousePosition.value = { x: event.offsetX, y: event.offsetY }
+
     if (isDragging.value) {
         const deltaX = event.movementX // Change in X since the last mouse event
         const deltaY = event.movementY // Change in Y since the last mouse event
+
         // Update translate values based on mouse movement
         translate.value.x += deltaX
         translate.value.y += deltaY
@@ -73,16 +94,20 @@ const onWheel = (event) => {
     event.preventDefault()
     const mapContainer = event.currentTarget // Reference to the map container
     const rect = mapContainer.getBoundingClientRect() // Get the bounding rect
+
     // Get mouse position relative to the container
     const mouseX = event.clientX - rect.left
     const mouseY = event.clientY - rect.top
+
     // Determine zoom direction
     const zoom = event.deltaY < 0 ? 1.1 : 0.9
     const newScale = scale.value * zoom
+
     if (newScale < minScale) {
         resetMap()
         return
     }
+
     if (newScale >= minScale) {
         // Calculate scale factor
         const scaleFactor = newScale / scale.value
@@ -93,52 +118,51 @@ const onWheel = (event) => {
         scale.value = newScale
     }
 }
-// Reset Map
-const resetting = ref(false);
+
+// ===== Reset Map =====
 const resetMap = () => {
     resetting.value = true;
     scale.value = 1;
-    translate.value.x = 0;
-    translate.value.y = 0;
+
+    translate.value = { x: 0, y: 0 };
+
     setTimeout(() => {
         resetting.value = false;
     }, 300); // Adjust this duration to match your CSS transition
 };
-const transitionStyle = computed(() => {
-    return resetting.value ? 'transform 0.3s ease' : 'none';
-});
 
+// ===== Map List =====
+const filteredMapIds = computed(() =>
+    mapStore.mapIds.filter(id => {
+        const map = mapStore.mapsById[id]
+        return map?.baseMapName === props.activeBaseMap
+    })
+)
 
-// Point Logic
-const point = ref({
-    name: 'Point 1',
-    description: '',
-    icon: 'B',
-    x: 0,
-    y: 0,
-    pX: 0,
-    pY: 0,
-    color: 'Red',
-    size: 1
-})
-const activeMap = ref()
 const onDoubleClick = (event, mapId) => {
     event.preventDefault()
+
     const mapWidth = event.target.getBoundingClientRect().width
     const mapHeight = event.target.getBoundingClientRect().height
+
     point.value.x = Math.floor(event.offsetX)
     point.value.y = Math.floor(event.offsetY)
     point.value.pX = Math.floor(event.offsetX / mapWidth * 100 * scale.value)
     point.value.pY = Math.floor(event.offsetY / mapHeight * 100 * scale.value)
+
     activeMap.value = event.target
     isModalOpen.value = true
 }
+
+// ===== Lifecycle =====
 onMounted(() => {
     document.addEventListener('mouseup', onMouseUp)
 })
 onBeforeUnmount(() => {
     document.removeEventListener('mouseup', onMouseUp)
 })
+
+// ===== Point Functions =====
 const deleteAPoint = (mapId, point) => {
     deletePoint(mapId, point)
     //TODO: Fix this
@@ -146,8 +170,6 @@ const deleteAPoint = (mapId, point) => {
 }
 
 // Modal Logic
-const isModalOpen = ref(false);
-
 const openModal = () => {
     isModalOpen.value = true;
 }
@@ -177,8 +199,6 @@ const onAddPoint = (value) => {
     createPoint(props.map.id, newPoint)
     closeModal()
 }
-const selectedPoint = ref()
-const activeTabIndex = ref(0)
 const selectPoint = (event, point) => {
     if (event) event.stopPropagation()
     selectedPoint.value = point
@@ -186,25 +206,56 @@ const selectPoint = (event, point) => {
     activeTabIndex.value = 1
 }
 // Edit Logic
-// import Item1View from '@/views/boss/Item1View.vue';
-const showEditModal = ref(false)
-const editPoint = (event, point) => {
-    event.stopPropagation()
+const editPoint = (point) => {
     selectedPoint.value = point
     showEditModal.value = true
 }
-const isHovering = ref(false)
-const editAPoint = (mapId, point) => {
-    console.log(`point name: ${JSON.stringify(point)}`)
-    selectPoint(null, point)
-    showEditModal.value = true
+const updatePointHandler = (data) => {
+    updatePoint(data.id, data)
+    showEditModal.value = false
+}
+// const editAPoint = (mapId, point) => {
+//     console.log(`point name: ${JSON.stringify(point)}`)
+//     selectPoint(null, point)
+//     showEditModal.value = true
+// }
+const deletePointHandler = (pointData) => {
+    deletePoint(props.map.id, pointData.id)
+    if (selectedPoint.value?.id === pointData.id) selectedPoint.value = null
+}
+const selectPointHandler = (e, pointData) => {
+    if (e) e.stopPropagation()
+    selectedPoint.value = pointData
+    activeTabIndex.value = 1
+}
+const zoomToPoint = (point) => {
+    const mapEl = document.querySelector('.map'); // map container
+    const imgEl = document.querySelector('.image-container'); // image container
+
+    if (!mapEl || !imgEl) return;
+
+    const mapWidth = mapEl.clientWidth;
+    const mapHeight = mapEl.clientHeight;
+    const pointX = point.x; // in pixels
+    const pointY = point.y;
+    const targetScale = 2; // how much to zoom in (adjust as needed)
+
+    // Calculate new translate so that the point is roughly centered
+    const translateX = mapWidth / 2 - pointX * targetScale;
+    const translateY = mapHeight / 2 - pointY * targetScale;
+    scale.value = targetScale;
+    translate.value = { x: translateX, y: translateY };
+    resetting.value = true;
+    setTimeout(() => resetting.value = false, 300);
+
+    // Also select the point
+    selectedPoint.value = point;
+    // activeTabIndex.value = 1;
 }
 const onTabChange = (index) => {
-    console.log(`index is: ${index}`)
     activeTabIndex.value = index;
 }
 //TODO: Add highlight on point hover. So it's easy to figure out which point you're looking at.
-const hoverPoint = ref({})
 const onMouseOver = (point) => {
     console.log(`point: ${point}`)
     hoverPoint.value = point.name
@@ -212,7 +263,6 @@ const onMouseOver = (point) => {
 const onMouseHoverLeave = () => {
     hoverPoint.value = null
 }
-const activePoint = ref({})
 const toggleActive = (name) => {
     activePoint.value = activePoint.value.name === name ? null : name;
 }
@@ -232,172 +282,133 @@ const updateMapName = () => {
 }
 
 // Delete Map
-const deleteMap = (mapId) => {
-    const confirmed = window.confirm('Are you sure  you wish to delete this map?')
-    if (confirmed) {
-        //TODO: Access delete map store function
-        console.log("Deleting map with id: ", mapId);
+const deleteMapHandler = (mapId) => {
+    if (confirm('Are you sure you want to delete this map?')) {
+        mapStore.deleteMap(mapId)
     }
 }
 </script>
 <template>
     <div class="map-container" @mousemove="onContainerMouseMove">
+        <i class="bx bx-x" @click="deleteMapHandler(props.map.id)"></i>
+        <EditPoint v-if="showEditModal" :point="selectedPoint" :mapId="props.map.id"
+            @modal-close="showEditModal = false" />
+        <AddPoint v-if="isModalOpen" :point="point" :points="props.map.points" @modal-close="isModalOpen = false"
+            @add-point="onAddPoint" />
+        <div class="map-main">
+            <!-- Map Name -->
+            <template v-if="editingMapName">
+                <input v-model="editMapName">
+                <button @click="updateMapName">Update</button>
+            </template>
+            <template v-else>
+                <h2 class="map-name" @dblclick="editingMapName = true">{{ props.map.title }}</h2>
+            </template>
 
-        <!-- <pre>{{ map }}</pre> -->
+            <div class="two-column">
 
-        <i class="bx bx-x" @click="deleteMap(props.map.id)"></i>
-        <EditPoint v-if="showEditModal" :point="selectedPoint" :mapId="props.map.id" @modal-close="closeEditModal" />
-        <AddPoint v-if="isModalOpen" @modal-close="closeModal" @add-point="onAddPoint" :point="point"
-            :points="props.map.points">
-        </AddPoint>
-
-        <template v-if="editingMapName">
-            <input type="text" v-model="editMapName">
-            <button @click="updateMapName()">Update</button>
-        </template>
-        <template v-else>
-            <h2 class="map-name" @dblclick="editingMapName = true">{{ map.name }}</h2>
-        </template>
-
-        <div class="two-column">
-            <div class="map-wrapper">
-                <div class="overlay">
-                    <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
-                    <span class="coord-y">Lon: {{ Math.floor(picH) }}</span>
-                    <span @click="resetMap" class="reset">
-                        reset
-                    </span>
-                </div>
-                <div class="map" @mouseover="isHovering = true" @mousedown="onMouseDown" @mousemove="onMouseMove"
-                    @mouseleave="onMouseLeave" @wheel="onWheel" @dblclick="onDoubleClick($event, map.id)"
-                    :style="{ cursor: isDragging ? 'grabbing' : 'crosshair' }">
-                    <div class="image-container" :style="{
-                        transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
-                        transition: transitionStyle
-                    }">
-                        <div class="points">
-                            <Point v-for="point in map.points" :key="point.name" :point="point" :style="{
-                                position: 'absolute',
-                                zIndex: '100',
-                                left: point.x + 'px',
-                                top: point.y + 'px',
-                            }" :hoverPoint="hoverPoint" @click="selectPoint($event, point)"
-                                @dblclick="editPoint($event, point)" />
-                        </div>
-                        <img :src="imageSrc" alt="Map Image" class="map-image" />
+                <!-- Map List -->
+                <aside class="map-list">
+                    <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
+                        @click="mapStore.setActiveMap(id)">
+                        {{ mapStore.mapsById[id].title }}
                     </div>
-                    <span class="vertical-line" v-if="isHovering" :style="{ left: parentMousePosition.x + 'px' }">
-                        <div class="vertical-line-text">{{ Math.floor(picW) }} </div>
-                    </span>
-                    <span class="horizontal-line" v-if="isHovering" :style="{ top: parentMousePosition.y + 'px' }">
-                        <div class="horizontal-line-text">{{ Math.floor(picH) }} </div>
-                    </span>
-                </div>
-            </div>
-            <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
-                <tab title="All Points">
-                    <div v-if="!map.points || map.points?.length == 0">
-                        Double click anywhere on the map to create a point.
-                    </div>
-                    <div class="points-container">
-                        <div v-for="category in categories" :key="category">
-                            <h2 v-if="matchCount(category)">
-                                <span class="material-symbols-outlined">
-                                    {{ category.icon }}
-                                </span>
-                                - {{ category.name }}
-                            </h2>
-                            <div v-for="point in map.points" :key="point.name">
-                                <div class="point-display" v-if="point.icon == category.name"
-                                    @mouseover="onMouseOver(point)" @mouseleave="onMouseHoverLeave"
-                                    @click="toggleActive(point.name)">
-                                    <div class="front">
-                                        <div class="color">
-                                            <div class="circle" :style="{ background: point.color }"></div>
-                                        </div>
+                </aside>
 
-                                        <div class="coords">
-                                            [{{ point.pX }},
-                                            {{ point.pY }}]
-                                        </div>
-                                    </div>
-                                    <div class="mid">
-                                        <div class="name">
-                                            {{ point.name }}
-                                        </div>
-                                    </div>
-                                    <div class="end">
-                                        <a @click="editAPoint(map.id, point)">
-                                            <span class="material-symbols-outlined"> edit </span>
-                                        </a>
-                                        <a @click="deleteAPoint(map.id, point)">
-                                            <span class="material-symbols-outlined"> delete </span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="map-wrapper">
+                    <div class="overlay">
+                        <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
+                        <span class="coord-y">Lon: {{ Math.floor(picH) }}</span>
+                        <span class="reset" @click="resetMap">reset</span>
                     </div>
 
-                </tab>
-                <tab title="Point">
-                    <div v-if="selectedPoint">
-                        <div class="selected-point">
-                            <h3>Selected Point</h3>
-                        </div>
-                        <div>
-                            <!-- <label for="name">Name:</label> -->
-                            <label for="">{{ selectedPoint.name }}</label>
+                    <div class="map" @mouseover="isHovering = true" @mousedown="onMouseDown" @mousemove="onMouseMove"
+                        @mouseleave="onMouseLeave" @wheel="onWheel" @dblclick="onDoubleClick"
+                        :style="{ cursor: isDragging ? 'grabbing' : 'crosshair' }">
+                        <div class="image-container"
+                            :style="{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`, transition: transitionStyle }">
 
-                            <div class="coord-container">
-                                <div class="coord">
-                                    <label for="">X:</label>
-                                    <label for="">{{ selectedPoint.pX }}</label>
-                                </div>
-
-                                <div class="coord">
-                                    <label for="">Y:</label>
-                                    <label for="">{{ selectedPoint.pY }}</label>
-                                </div>
-
-                                <button @click="showEditModal = !showEditModal">
-                                    <span class="material-symbols-outlined">edit</span>
-                                </button>
-                                <button @click="deleteAPoint(map.id, point)">
-                                    <span class="material-symbols-outlined"> delete (needs fixing) </span>
-                                </button>
+                            <div class="points">
+                                <Point v-for="p in props.map.points" :key="p.id" :point="p" :hoverPoint="hoverPoint"
+                                    @click="selectPointHandler($event, p)" @dblclick="editPoint(p)"
+                                    :style="{ left: p.x + 'px', top: p.y + 'px', position: 'absolute', zIndex: 100 }" />
                             </div>
 
-                        </div>
-                        <div>
-                            <label for="">{{ selectedPoint.description }}</label>
+                            <img :src="imageSrc" class="map-image" />
                         </div>
 
-                        <div>
-                            <label for="color">color:</label>
-                            <label for="">{{ selectedPoint.color }}</label>
-                        </div>
-
-                        <div>
-                            <label for="Category">Category:</label>
-                            <label for="">{{ selectedPoint.icon }}</label>
-                        </div>
-                        <div>
-                            <label for="size">size:</label>
-                            <label for="">{{ selectedPoint.size }}</label>
-                        </div>
+                        <span class="vertical-line" v-if="isHovering" :style="{ left: parentMousePosition.x + 'px' }">
+                            <div class="vertical-line-text">{{ Math.floor(picW) }}</div>
+                        </span>
+                        <span class="horizontal-line" v-if="isHovering" :style="{ top: parentMousePosition.y + 'px' }">
+                            <div class="horizontal-line-text">{{ Math.floor(picH) }}</div>
+                        </span>
                     </div>
-                    <div v-else>
-                        <template v-if="map.points?.length < 1">
+                </div>
+
+                <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
+                    <tab title="All Points">
+                        <div v-if="!props.map.points?.length">
                             Double click anywhere on the map to create a point.
-                        </template>
-                        <template v-else>
-                            Select a point on the map to see more details.
-                        </template>
-                    </div>
-                </tab>
-            </Tabs>
+                        </div>
 
+                        <div class="points-container">
+                            <div v-for="category in categories" :key="category.name">
+                                <h2 v-if="matchCount(category)">
+                                    <span class="material-symbols-outlined">{{ category.icon }}</span> - {{
+                                        category.name }}
+                                </h2>
+                                <template v-for="p in props.map.points" :key="p.id">
+                                    <div v-if="p.icon === category.name" class="point-display"
+                                        @mouseover="onMouseOver(p)" @mouseleave="onMouseLeavePoint"
+                                        @dblclick="zoomToPoint(p)">
+                                        <!-- @click="toggleActive(p.name)" -->
+                                        <div class="front">
+                                            <div class="color">
+                                                <div class="circle" :style="{ background: p.color }"></div>
+                                            </div>
+                                            <div class="coords">[{{ p.pX }}, {{ p.pY }}]</div>
+                                        </div>
+                                        <div class="mid">
+                                            <div class="name">{{ p.name }}</div>
+                                        </div>
+                                        <div class="end">
+                                            <a @click.prevent="editPoint(p)"><span
+                                                    class="material-symbols-outlined">edit</span></a>
+                                            <a @click.prevent="deletePointHandler(p)"><span
+                                                    class="material-symbols-outlined">delete</span></a>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </tab>
+
+                    <tab title="Point">
+                        <div v-if="selectedPoint">
+                            <div class="selected-point">
+                                <h3>{{ selectedPoint.name }}</h3>
+                            </div>
+                            <div class="coord-container">
+                                <div class="coord">X: {{ selectedPoint.pX }}</div>
+                                <div class="coord">Y: {{ selectedPoint.pY }}</div>
+                            </div>
+                            <div>Color: {{ selectedPoint.color }}</div>
+                            <div>Category: {{ selectedPoint.icon }}</div>
+                            <div>Size: {{ selectedPoint.size }}</div>
+                            <div>Description: {{ selectedPoint.description }}</div>
+                        </div>
+                        <div v-else>
+                            <template v-if="!props.map.points?.length">
+                                Double click anywhere on the map to create a point.
+                            </template>
+                            <template v-else>
+                                Select a point on the map to see details.
+                            </template>
+                        </div>
+                    </tab>
+                </Tabs>
+            </div>
         </div>
     </div>
 </template>
@@ -535,6 +546,7 @@ const deleteMap = (mapId) => {
 .map-name {
     font-size: 1.5em;
     padding: 1em;
+    text-align: center;
 }
 
 .map-wrapper {
