@@ -9,7 +9,18 @@ import AddPoint from '@/components/modals/AddPoint.vue'
 import EditPoint from '@/components/modals/EditPoint.vue'
 
 // ===== Props & Store =====
-const props = defineProps({ map: Object, activeBaseMap: String })
+const props = defineProps({
+    map: Object,
+    activeBaseMap: String,
+    baseMaps: Array,
+    newMapTitle: String
+})
+
+const emit = defineEmits([
+    'add-map-instance',
+    'update:newMapTitle'
+])
+
 const mapStore = useMapStore()
 const { createPoint, deletePoint, updatePoint, categories, activeMapId } = mapStore
 
@@ -307,14 +318,6 @@ const deleteMapHandler = (mapId) => {
 
             <div class="two-column">
 
-                <!-- Map List -->
-                <aside class="map-list">
-                    <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
-                        @click="mapStore.setActiveMap(id)">
-                        {{ mapStore.mapsById[id].title }}
-                    </div>
-                </aside>
-
                 <div class="map-wrapper">
                     <div class="overlay">
                         <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
@@ -347,6 +350,26 @@ const deleteMapHandler = (mapId) => {
                 </div>
 
                 <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
+                    <tab title="All Maps">
+                        <!-- Add Map Instance -->
+                        <div class="add-map">
+                            <input type="text" placeholder="Map Instance Title" :value="newMapTitle"
+                                @input="emit('update:newMapTitle', $event.target.value)" />
+
+                            <button @click="emit('add-map-instance')">
+                                Add Map
+                            </button>
+                        </div>
+
+                        <!-- Map List -->
+                        <div class="map-list">
+                            <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
+                                @click="mapStore.setActiveMap(id)">
+                                {{ mapStore.mapsById[id].title }}
+                            </div>
+                        </div>
+
+                    </tab>
                     <tab title="All Points">
                         <div v-if="!props.map.points?.length">
                             Double click anywhere on the map to create a point.
@@ -547,6 +570,18 @@ const deleteMapHandler = (mapId) => {
     font-size: 1.5em;
     padding: 1em;
     text-align: center;
+}
+
+.map-instance-name {
+    padding: .5em;
+    margin: 0.25em;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.map-instance-name:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: cyan;
 }
 
 .map-wrapper {

@@ -76,21 +76,11 @@ const deletePoint = (mapId, pointId) => {
             </div>
         </div>
 
-        <!-- Add Map Instance -->
-        <div class="addMap">
-            <h3>Add a New Map Instance</h3>
-            <input type="text" placeholder="Map Instance Title" v-model="newMapTitle" />
-            <select v-model="selectedMapName">
-                <option v-for="base in baseMaps" :key="base.name" :value="base.name">
-                    {{ base.name }}
-                </option>
-            </select>
-            <button @click="addMapInstance">Add Map</button>
-        </div>
-
         <!-- Map List -->
         <div class="map-layout">
-            <Map v-if="activeMap" :map="activeMap" :activeBaseMap="selectedMapName" :key="activeMap.id" />
+            <Map v-if="activeMap" :map="activeMap" :activeBaseMap="selectedMapName" :baseMaps="baseMaps"
+                :newMapTitle="newMapTitle" @update:newMapTitle="newMapTitle = $event"
+                @add-map-instance="addMapInstance" />
         </div>
 
     </div>
