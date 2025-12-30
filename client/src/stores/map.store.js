@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+
 export const useMapStore = defineStore("map", {
   state: () => ({
     activeMapId: null,
@@ -45,6 +46,7 @@ export const useMapStore = defineStore("map", {
       { name: "Waypoint", icon: "home_pin" },
     ],
   }),
+
   getters: {
     activeMap(state) {
       if (!state.activeMapId) return null;
@@ -91,11 +93,18 @@ export const useMapStore = defineStore("map", {
     },
   },
   actions: {
-    setActiveMap(id) {
-      this.activeMapId = id;
-    },
+    ensureMapInstance(baseMapName) {
+      // Check if a map instance already exists for this base map
+      const existingId = this.mapIds.find((id) => {
+        return this.mapsById[id]?.baseMapName === baseMapName;
+      });
 
-    addMapInstance({ baseMapName, title }) {
+      if (existingId) {
+        this.activeMapId = existingId;
+        return;
+      }
+
+      // Otherwise create a default instance
       const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
       if (!baseMap) return;
 
@@ -104,16 +113,68 @@ export const useMapStore = defineStore("map", {
       this.mapsById[id] = {
         id,
         baseMapName,
-        title,
+        title: `${baseMapName} Map`,
         img: baseMap.img,
       };
 
       this.mapIds.push(id);
       this.pointIdsByMap[id] = [];
+      this.activeMapId = id;
+    },
 
-      if (!this.activeMapId) {
-        this.activeMapId = id;
+    setActiveMap(id) {
+      this.activeMapId = id;
+    },
+
+    // addMapInstance({ baseMapName, title }) {
+    //   const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
+    //   if (!baseMap) return;
+
+    //   const id = Date.now();
+
+    //   this.mapsById[id] = {
+    //     id,
+    //     baseMapName,
+    //     title,
+    //     img: baseMap.img,
+    //   };
+
+    //   this.mapIds.push(id);
+    //   this.pointIdsByMap[id] = [];
+
+    //   if (!this.activeMapId) {
+    //     this.activeMapId = id;
+    //   }
+    // },
+
+    ensureMapExists() {
+      if (this.maps.length === 0) {
+        const newMap = {
+          id: nanoid(),
+          name: "New Map",
+          zoom: 1,
+          center: [0, 0],
+          points: [],
+        };
+
+        this.maps.push(newMap);
+        this.activeMapId = newMap.id;
+
+        return newMap;
       }
+
+      // If maps exist but none selected
+      if (!this.activeMapId) {
+        this.activeMapId = this.maps[0].id;
+        return this.maps[0];
+      }
+
+      return this.activeMap;
+    },
+
+    selectMap(mapId) {
+      this.ensureMapExists();
+      this.activeMapId = mapId;
     },
 
     /* Add new map instance from a base map */

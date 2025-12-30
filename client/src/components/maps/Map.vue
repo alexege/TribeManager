@@ -22,7 +22,7 @@ const emit = defineEmits([
 ])
 
 const mapStore = useMapStore()
-const { createPoint, deletePoint, updatePoint, categories, activeMapId } = mapStore
+const { createPoint, deletePoint, updatePoint, categories, activeMapId, deleteMapInstance } = mapStore
 
 // ===== Mouse & Map Logic =====
 const mousePosition = ref('Original X: 0, Y: 0')
@@ -42,7 +42,7 @@ const point = ref({})
 const activePoint = ref(null)
 const selectedPoint = ref(null)
 const hoverPoint = ref(null)
-const activeMap = ref(null)
+const activeMapEl = ref(null)
 
 // ===== Modals =====
 const isModalOpen = ref(false)
@@ -50,7 +50,7 @@ const showEditModal = ref(false)
 const activeTabIndex = ref(0)
 
 // ===== Computed =====
-const imageSrc = computed(() => props.map.img)
+const imageSrc = computed(() => props.map.img ?? '')
 const transitionStyle = computed(() => resetting.value ? 'transform 0.3s ease' : 'none')
 
 // ===== Map Events =====
@@ -150,7 +150,7 @@ const filteredMapIds = computed(() =>
     })
 )
 
-const onDoubleClick = (event, mapId) => {
+const onDoubleClick = (event) => {
     event.preventDefault()
 
     const mapWidth = event.target.getBoundingClientRect().width
@@ -161,7 +161,7 @@ const onDoubleClick = (event, mapId) => {
     point.value.pX = Math.floor(event.offsetX / mapWidth * 100 * scale.value)
     point.value.pY = Math.floor(event.offsetY / mapHeight * 100 * scale.value)
 
-    activeMap.value = event.target
+    activeMapEl.value = event.target
     isModalOpen.value = true
 }
 
@@ -176,8 +176,7 @@ onBeforeUnmount(() => {
 // ===== Point Functions =====
 const deleteAPoint = (mapId, point) => {
     deletePoint(mapId, point)
-    //TODO: Fix this
-    selectPoint.value = {}
+    selectPoint.value = null
 }
 
 // Modal Logic
@@ -191,7 +190,7 @@ const closeEditModal = () => {
     showEditModal.value = false;
 }
 const onAddPoint = (value) => {
-    const map = activeMap.value
+    const map = activeMapEl.value
     const mapWidth = map.getBoundingClientRect().width
     const mapHeight = map.getBoundingClientRect().height
     const percentX = Math.floor(value.x / mapWidth * 100 * scale.value)
@@ -240,6 +239,10 @@ const selectPointHandler = (e, pointData) => {
     activeTabIndex.value = 1
 }
 const zoomToPoint = (point) => {
+
+    const mapRef = ref(null)
+    const imageRef = ref(null)
+
     const mapEl = document.querySelector('.map'); // map container
     const imgEl = document.querySelector('.image-container'); // image container
 
@@ -263,6 +266,9 @@ const zoomToPoint = (point) => {
     selectedPoint.value = point;
     // activeTabIndex.value = 1;
 }
+
+
+
 const onTabChange = (index) => {
     activeTabIndex.value = index;
 }
@@ -275,7 +281,7 @@ const onMouseHoverLeave = () => {
     hoverPoint.value = null
 }
 const toggleActive = (name) => {
-    activePoint.value = activePoint.value.name === name ? null : name;
+    activePoint.value = activePoint.value === name ? null : name;
 }
 //Check to see if the category has any matching points
 const matchCount = (category) => {
@@ -283,7 +289,7 @@ const matchCount = (category) => {
 }
 
 // Edit Map Name
-const editMapName = ref(props.map.name)
+const editMapName = ref(props.map.title)
 const editingMapName = ref(false)
 const updateMapName = () => {
     console.log("Attempting to udpate map name");
@@ -295,7 +301,7 @@ const updateMapName = () => {
 // Delete Map
 const deleteMapHandler = (mapId) => {
     if (confirm('Are you sure you want to delete this map?')) {
-        mapStore.deleteMap(mapId)
+        mapStore.deleteMapInstance(mapId)
     }
 }
 </script>
@@ -364,7 +370,7 @@ const deleteMapHandler = (mapId) => {
                         <!-- Map List -->
                         <div class="map-list">
                             <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
-                                @click="mapStore.setActiveMap(id)">
+                                class="map-instance-name" @click="mapStore.setActiveMap(id)">
                                 {{ mapStore.mapsById[id].title }}
                             </div>
                         </div>
@@ -383,8 +389,8 @@ const deleteMapHandler = (mapId) => {
                                 </h2>
                                 <template v-for="p in props.map.points" :key="p.id">
                                     <div v-if="p.icon === category.name" class="point-display"
-                                        @mouseover="onMouseOver(p)" @mouseleave="onMouseLeavePoint"
-                                        @dblclick="zoomToPoint(p)">
+                                        @mouseover="onMouseOver(p)" @mouseleave="onMouseHoverLeave"
+                                        @click.prevent="zoomToPoint(p)" @dblclick="activeTabIndex.value = 1;">
                                         <!-- @click="toggleActive(p.name)" -->
                                         <div class="front">
                                             <div class="color">
@@ -533,6 +539,7 @@ const deleteMapHandler = (mapId) => {
     justify-content: center;
     width: 100%;
     /* height: 100vh; */
+    gap: .5em;
 }
 
 .map-container {
@@ -717,5 +724,14 @@ const deleteMapHandler = (mapId) => {
     min-width: 7em;
 }
 
-.tabs-container {}
+.tabs-container {
+    width: 25vw;
+}
+
+.add-map {
+    display: flex;
+    gap: .5em;
+    margin: 1em 0;
+    justify-content: center;
+}
 </style>

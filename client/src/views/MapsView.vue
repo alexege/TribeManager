@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from 'pinia'
 import { useMapStore } from '@/stores/map.store'
-import { ref, computed, watchEffect } from 'vue'
+import { ref, computed, watchEffect, onMounted } from 'vue'
 import Map from '@/components/maps/Map.vue'
 
 /* Store */
@@ -64,9 +64,19 @@ const deletePoint = (mapId, pointId) => {
     if (!confirm('Delete this point?')) return
     mapStore.deletePoint(mapId, pointId)
 }
+
+onMounted(() => {
+    if (!mapStore.mapIds.length) {
+        mapStore.ensureMapInstance('The Island')
+    }
+})
+
 </script>
 <template>
     <div class="container">
+
+        <h3 class="thumbnail-list-title">Maps</h3>
+
         <!-- Base Map Thumbnails -->
         <div class="thumbnail-list">
             <div v-for="base in baseMaps" :key="base.name" class="thumbnail"
@@ -75,6 +85,8 @@ const deletePoint = (mapId, pointId) => {
                 <p>{{ base.name }}</p>
             </div>
         </div>
+
+        <p class="thumbnail-list-description">Select a map to see all instances</p>
 
         <!-- Map List -->
         <div class="map-layout">
@@ -94,12 +106,25 @@ const deletePoint = (mapId, pointId) => {
 }
 
 /* Thumbnails */
+.thumbnail-list-title {
+    color: white;
+    text-align: center;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-size: 1.2em;
+}
+
+.thumbnail-list-description {
+    color: white;
+    text-align: center;
+    margin-bottom: 1em;
+    font-size: 0.9em;
+}
+
 .thumbnail-list {
     display: flex;
     justify-content: center;
-    gap: 1em;
     overflow-x: auto;
-    padding: 1em 0;
     color: white;
 }
 
