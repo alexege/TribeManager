@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { useAuthStore } from '../stores/auth.store'
+import { useAuthStore } from '@/stores/auth.store'
 const authStore = useAuthStore()
 
 const mode = ref('login')

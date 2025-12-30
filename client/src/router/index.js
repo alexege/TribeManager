@@ -6,6 +6,7 @@ import ModerationPanel from "../views/ModerationPanel.vue";
 import LoginView from "../views/LoginRegView.vue";
 import DashboardView from "../views/DashboardView.vue";
 import TribeTrackerView from "../views/TribeTrackerView.vue";
+import MapsView from "../views/MapsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -46,6 +47,12 @@ const router = createRouter({
       path: "/tracker",
       name: "tracker",
       component: TribeTrackerView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/maps",
+      name: "maps",
+      component: MapsView,
       meta: { requiresAuth: true },
     },
   ],
