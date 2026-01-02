@@ -79,6 +79,17 @@ const filteredMapIds = computed(() =>
     })
 )
 
+watch(filteredMapIds, () => {
+    activeTabIndex.value = 0;
+
+    console.log("filteredMapIds", filteredMapIds.value)
+
+    if (filteredMapIds.value.length > 0) {
+        activeMapId.value = filteredMapIds.value[0]
+        mapStore.setActiveMap(filteredMapIds.value[0])
+    }
+})
+
 // ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
@@ -282,13 +293,13 @@ const confirmDeleteMap = (mapId) => {
             </InlineEdit>
 
             <div class="two-column">
-                <div class="map-wrapper">
+                <div class="map-wrapper" v-if="filteredMapIds.length > 0">
                     <div class="overlay">
                         <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
                         <span class="coord-y">Lon: {{ Math.floor(picH) }}</span>
                         <span class="reset" @click="resetMap">reset</span>
                     </div>
-                    <div v-if="activeMap" class="map" ref="mapRef" @mouseover="isHovering = true" @mousedown="onMouseDown"
+                    <div class="map" ref="mapRef" @mouseover="isHovering = true" @mousedown="onMouseDown"
                         @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel"
                         @dblclick="onDoubleClick" :style="{ cursor: isDragging ? 'grabbing' : 'crosshair' }">
                         <div class="image-container"
@@ -310,9 +321,9 @@ const confirmDeleteMap = (mapId) => {
                             <div class="horizontal-line-text">{{ Math.floor(picH) }}</div>
                         </span>
                     </div>
-                    <div v-else>
-                        No map found
-                    </div>
+                </div>
+                <div v-else class="no-map">
+                    No map found. Please add one to continue...
                 </div>
                 <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
                     <tab title="All Maps">
@@ -404,6 +415,23 @@ const confirmDeleteMap = (mapId) => {
     </div>
 </template>
 <style scoped>
+.map-list .active {
+    color: cyan;
+    outline: 1px solid cyan;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.no-map {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #121212;
+    min-width: 25vw;
+    min-height: 25vw;
+    width: 50vw;
+    height: 50vw;
+}
+
 .bx-x {
     position: absolute;
     top: .5em;
