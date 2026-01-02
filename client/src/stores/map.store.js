@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 export const useMapStore = defineStore("map", {
   state: () => ({
     activeMapId: null,
-
+    activeMapTab: "all",
     /* Hardcoded base maps (parent maps) */
     baseMaps: [
       { name: "The Island", img: "../../src/assets/images/maps/TheIsland.png" },
@@ -93,6 +93,13 @@ export const useMapStore = defineStore("map", {
     },
   },
   actions: {
+    setActiveMap(id) {
+      this.activeMapId = id;
+      this.activeMapTab = "all";
+    },
+    setActiveMapTab(tabId) {
+      this.activeMapTab = tabId;
+    },
     ensureMapInstance(baseMapName) {
       // Check if a map instance already exists for this base map
       const existingId = this.mapIds.find((id) => {
@@ -101,6 +108,7 @@ export const useMapStore = defineStore("map", {
 
       if (existingId) {
         this.activeMapId = existingId;
+        this.activeMapTab = "all";
         return;
       }
 
@@ -120,33 +128,8 @@ export const useMapStore = defineStore("map", {
       this.mapIds.push(id);
       this.pointIdsByMap[id] = [];
       this.activeMapId = id;
+      this.activeMapTab = "all";
     },
-
-    setActiveMap(id) {
-      this.activeMapId = id;
-    },
-
-    // addMapInstance({ baseMapName, title }) {
-    //   const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
-    //   if (!baseMap) return;
-
-    //   const id = Date.now();
-
-    //   this.mapsById[id] = {
-    //     id,
-    //     baseMapName,
-    //     title,
-    //     img: baseMap.img,
-    //   };
-
-    //   this.mapIds.push(id);
-    //   this.pointIdsByMap[id] = [];
-
-    //   if (!this.activeMapId) {
-    //     this.activeMapId = id;
-    //   }
-    // },
-
     ensureMapExists() {
       if (this.maps.length === 0) {
         const newMap = {
@@ -190,11 +173,14 @@ export const useMapStore = defineStore("map", {
       };
       this.mapIds.push(id);
       this.pointIdsByMap[id] = [];
+      this.activeMapId = id;
+      this.activeMapTab = "all";
+      return id;
     },
     deleteMapInstance(mapId) {
       const pointIds = this.pointIdsByMap[mapId] || [];
       pointIds.forEach((pid) => delete this.pointsById[pid]);
-      delete this.mapsById[mapId];
+      //   delete this.mapsById[mapId];
       delete this.pointIdsByMap[mapId];
       this.mapIds = this.mapIds.filter((id) => id !== mapId);
     },

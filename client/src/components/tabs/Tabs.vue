@@ -55,7 +55,6 @@ export default defineComponent({
         watch(
             () => props.activeTabIndex,
             (newValue, oldValue) => {
-                console.log(`prop changed: ${oldValue} to ${newValue}`)
                 selectedIndex.value = newValue
             }
         )

@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+
+// ===== Imports =====
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useMapStore } from '@/stores/map.store'
 
 import Point from '@/components/maps/Point.vue'
@@ -7,8 +9,9 @@ import Tab from '@/components/tabs/Tab.vue'
 import Tabs from '@/components/tabs/Tabs.vue'
 import AddPoint from '@/components/modals/AddPoint.vue'
 import EditPoint from '@/components/modals/EditPoint.vue'
+import InlineEdit from '../inputs/InlineEdit.vue'
 
-// ===== Props & Store =====
+// ===== Props & Emits =====
 const props = defineProps({
     map: Object,
     activeBaseMap: String,
@@ -21,28 +24,45 @@ const emit = defineEmits([
     'update:newMapTitle'
 ])
 
+// ===== Store =====
 const mapStore = useMapStore()
-const { createPoint, deletePoint, updatePoint, categories, activeMapId, deleteMapInstance } = mapStore
+const {
+    createPoint,
+    deletePoint,
+    updatePoint,
+    categories,
+    deleteMapInstance
+} = mapStore
 
-// ===== Mouse & Map Logic =====
-const mousePosition = ref('Original X: 0, Y: 0')
+const activeMap = computed(() => mapStore.activeMap)
+// const map = computed(() => mapStore.activeMap)
+const activeMapId = computed(() => mapStore.activeMapId)
+
+// ===== Constants =====
+const MIN_SCALE = 0.5
+const TRANSITION_MS = 300
+const ZOOM_TO_POINT_SCALE = 2
+
+// ===== Refs =====
+const mapRef = ref(null)
+const activeMapEl = ref(null)
+
+// ===== Map Transform State =====
+const scale = ref(1) // Track the current scale
+const translate = ref({ x: 0, y: 0 }) // Track the translation
+const resetting = ref(false)
+
+// ===== Mouse State =====
+const isDragging = ref(false)
+const isHovering = ref(false)
+const parentMousePosition = ref({ x: 0, y: 0 })
 const picW = ref(0)
 const picH = ref(0)
-const scale = ref(1) // Track the current scale
-const minScale = 0.5 // Minimum scale (original size)
-const isDragging = ref(false)
-const dragStartPosition = ref({ x: 0, y: 0 })
-const translate = ref({ x: 0, y: 0 }) // Track the translation
-const parentMousePosition = ref({ x: 0, y: 0 })
-const resetting = ref(false)
-const isHovering = ref(false)
 
-// ===== Point State =====
-const point = ref({})
-const activePoint = ref(null)
+// ===== Point / Selection State =====
 const selectedPoint = ref(null)
 const hoverPoint = ref(null)
-const activeMapEl = ref(null)
+const point = ref({})
 
 // ===== Modals =====
 const isModalOpen = ref(false)
@@ -50,76 +70,64 @@ const showEditModal = ref(false)
 const activeTabIndex = ref(0)
 
 // ===== Computed =====
-const imageSrc = computed(() => props.map.img ?? '')
 const transitionStyle = computed(() => resetting.value ? 'transform 0.3s ease' : 'none')
+const imageSrc = computed(() => props.map.img ?? '')
+const filteredMapIds = computed(() =>
+    mapStore.mapIds.filter(id => {
+        const map = mapStore.mapsById[id]
+        return map?.baseMapName === props.activeBaseMap
+    })
+)
 
-// ===== Map Events =====
+// ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
     isDragging.value = true
-    dragStartPosition.value = {
-        x: event.offsetX - translate.value.x,
-        y: event.offsetY - translate.value.y
-    }
 }
-const onContainerMouseMove = (event) => {
-    const container = event.target.closest('.map')
-    // const container = document.querySelector('.map')
-    if (container) {
-        const rect = container.getBoundingClientRect()
-        const offsetX = event.clientX - rect.left
-        const offsetY = event.clientY - rect.top
-        parentMousePosition.value = { x: offsetX, y: offsetY }
-    }
-}
-const onMouseMove = (event) => {
 
+const onMouseMove = (event) => {
     const mapWidth = event.target.getBoundingClientRect().width
     const mapHeight = event.target.getBoundingClientRect().height
-
     //Used for intersecting lines
     picW.value = event.offsetX / mapWidth * 100 * scale.value;
     picH.value = event.offsetY / mapHeight * 100 * scale.value;
-    mousePosition.value = { x: event.offsetX, y: event.offsetY }
-
+    // mousePosition.value = { x: event.offsetX, y: event.offsetY }
     if (isDragging.value) {
         const deltaX = event.movementX // Change in X since the last mouse event
         const deltaY = event.movementY // Change in Y since the last mouse event
-
         // Update translate values based on mouse movement
         translate.value.x += deltaX
         translate.value.y += deltaY
     }
 }
+
 const onMouseUp = () => {
     isDragging.value = false
     if (scale.value < 1) {
         resetMap()
     }
 }
+
 const onMouseLeave = () => {
     isDragging.value = false
     isHovering.value = false
 }
+
 const onWheel = (event) => {
     event.preventDefault()
     const mapContainer = event.currentTarget // Reference to the map container
     const rect = mapContainer.getBoundingClientRect() // Get the bounding rect
-
     // Get mouse position relative to the container
     const mouseX = event.clientX - rect.left
     const mouseY = event.clientY - rect.top
-
     // Determine zoom direction
     const zoom = event.deltaY < 0 ? 1.1 : 0.9
     const newScale = scale.value * zoom
-
-    if (newScale < minScale) {
+    if (newScale < MIN_SCALE) {
         resetMap()
         return
     }
-
-    if (newScale >= minScale) {
+    if (newScale >= MIN_SCALE) {
         // Calculate scale factor
         const scaleFactor = newScale / scale.value
         // Adjust the translation based on mouse position
@@ -130,40 +138,38 @@ const onWheel = (event) => {
     }
 }
 
-// ===== Reset Map =====
-const resetMap = () => {
-    resetting.value = true;
-    scale.value = 1;
+const onContainerMouseMove = (event) => {
+    const container = event.target.closest('.map')
 
-    translate.value = { x: 0, y: 0 };
-
-    setTimeout(() => {
-        resetting.value = false;
-    }, 300); // Adjust this duration to match your CSS transition
-};
-
-// ===== Map List =====
-const filteredMapIds = computed(() =>
-    mapStore.mapIds.filter(id => {
-        const map = mapStore.mapsById[id]
-        return map?.baseMapName === props.activeBaseMap
-    })
-)
+    if (container) {
+        const rect = container.getBoundingClientRect()
+        const offsetX = event.clientX - rect.left
+        const offsetY = event.clientY - rect.top
+        parentMousePosition.value = { x: offsetX, y: offsetY }
+    }
+}
 
 const onDoubleClick = (event) => {
     event.preventDefault()
-
     const mapWidth = event.target.getBoundingClientRect().width
     const mapHeight = event.target.getBoundingClientRect().height
-
     point.value.x = Math.floor(event.offsetX)
     point.value.y = Math.floor(event.offsetY)
     point.value.pX = Math.floor(event.offsetX / mapWidth * 100 * scale.value)
     point.value.pY = Math.floor(event.offsetY / mapHeight * 100 * scale.value)
-
     activeMapEl.value = event.target
     isModalOpen.value = true
 }
+
+// ===== Reset Map =====
+const resetMap = () => {
+    resetting.value = true;
+    scale.value = 1;
+    translate.value = { x: 0, y: 0 };
+    setTimeout(() => {
+        resetting.value = false;
+    }, TRANSITION_MS); // Adjust this duration to match your CSS transition
+};
 
 // ===== Lifecycle =====
 onMounted(() => {
@@ -172,22 +178,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
     document.removeEventListener('mouseup', onMouseUp)
 })
-
-// ===== Point Functions =====
-const deleteAPoint = (mapId, point) => {
-    deletePoint(mapId, point)
-    selectPoint.value = null
-}
-
-// Modal Logic
-const openModal = () => {
-    isModalOpen.value = true;
-}
 const closeModal = () => {
     isModalOpen.value = false;
-}
-const closeEditModal = () => {
-    showEditModal.value = false;
 }
 const onAddPoint = (value) => {
     const map = activeMapEl.value
@@ -209,178 +201,150 @@ const onAddPoint = (value) => {
     createPoint(props.map.id, newPoint)
     closeModal()
 }
-const selectPoint = (event, point) => {
-    if (event) event.stopPropagation()
+const selectPoint = (e, point) => {
+    if (e) e.stopPropagation()
     selectedPoint.value = point
-    // send prop to tabs component to update active tab
     activeTabIndex.value = 1
 }
+
 // Edit Logic
 const editPoint = (point) => {
     selectedPoint.value = point
     showEditModal.value = true
 }
-const updatePointHandler = (data) => {
-    updatePoint(data.id, data)
-    showEditModal.value = false
-}
-// const editAPoint = (mapId, point) => {
-//     console.log(`point name: ${JSON.stringify(point)}`)
-//     selectPoint(null, point)
-//     showEditModal.value = true
-// }
 const deletePointHandler = (pointData) => {
     deletePoint(props.map.id, pointData.id)
     if (selectedPoint.value?.id === pointData.id) selectedPoint.value = null
 }
-const selectPointHandler = (e, pointData) => {
-    if (e) e.stopPropagation()
-    selectedPoint.value = pointData
+const zoomToPoint = (point) => {
+    if (!mapRef.value) return
+    const mapWidth = mapRef.value.clientWidth
+    const mapHeight = mapRef.value.clientHeight
+    const targetScale = 2 // tweak as desired
+    resetting.value = true
+    // Center the point in the viewport
+    translate.value = {
+        x: mapWidth / 2 - point.x * targetScale,
+        y: mapHeight / 2 - point.y * targetScale
+    }
+    scale.value = targetScale
+    setTimeout(() => (resetting.value = false), TRANSITION_MS)
+    selectedPoint.value = point
     activeTabIndex.value = 1
 }
-const zoomToPoint = (point) => {
-
-    const mapRef = ref(null)
-    const imageRef = ref(null)
-
-    const mapEl = document.querySelector('.map'); // map container
-    const imgEl = document.querySelector('.image-container'); // image container
-
-    if (!mapEl || !imgEl) return;
-
-    const mapWidth = mapEl.clientWidth;
-    const mapHeight = mapEl.clientHeight;
-    const pointX = point.x; // in pixels
-    const pointY = point.y;
-    const targetScale = 2; // how much to zoom in (adjust as needed)
-
-    // Calculate new translate so that the point is roughly centered
-    const translateX = mapWidth / 2 - pointX * targetScale;
-    const translateY = mapHeight / 2 - pointY * targetScale;
-    scale.value = targetScale;
-    translate.value = { x: translateX, y: translateY };
-    resetting.value = true;
-    setTimeout(() => resetting.value = false, 300);
-
-    // Also select the point
-    selectedPoint.value = point;
-    // activeTabIndex.value = 1;
-}
-
-
-
 const onTabChange = (index) => {
     activeTabIndex.value = index;
 }
-//TODO: Add highlight on point hover. So it's easy to figure out which point you're looking at.
 const onMouseOver = (point) => {
-    console.log(`point: ${point}`)
-    hoverPoint.value = point.name
+    hoverPoint.value = point
 }
 const onMouseHoverLeave = () => {
     hoverPoint.value = null
-}
-const toggleActive = (name) => {
-    activePoint.value = activePoint.value === name ? null : name;
 }
 //Check to see if the category has any matching points
 const matchCount = (category) => {
     return props.map.points?.filter(point => point.icon == category.name).length;
 }
 
-// Edit Map Name
-const editMapName = ref(props.map.title)
-const editingMapName = ref(false)
-const updateMapName = () => {
-    console.log("Attempting to udpate map name");
-    //TODO: Add updateMapName to map.store
-    mapStore.updateMapName(props.map.id, editMapName.value)
-    editingMapName.value = false
+// Delete Map
+const deleteMapHandler = () => {
+    if (!props.map?.id) return
+    if (confirm(`Delete "${props.map.title}"?`)) {
+        deleteMapInstance(props.map.id)
+    }
 }
 
-// Delete Map
-const deleteMapHandler = (mapId) => {
-    if (confirm('Are you sure you want to delete this map?')) {
-        mapStore.deleteMapInstance(mapId)
-    }
+const confirmDeleteMap = (mapId) => {
+    const map = mapStore.mapsById[mapId]
+    if (!map) return
+
+    const confirmed = confirm(`Delete "${map.title}"?`)
+    if (!confirmed) return
+
+    mapStore.deleteMapInstance(mapId)
 }
 </script>
 <template>
-    <div class="map-container" @mousemove="onContainerMouseMove">
+    <div class="map-container" @mousemove="onContainerMouseMove" v-if="activeMap">
         <i class="bx bx-x" @click="deleteMapHandler(props.map.id)"></i>
         <EditPoint v-if="showEditModal" :point="selectedPoint" :mapId="props.map.id"
             @modal-close="showEditModal = false" />
-        <AddPoint v-if="isModalOpen" :point="point" :points="props.map.points" @modal-close="isModalOpen = false"
-            @add-point="onAddPoint" />
+        <AddPoint v-if="isModalOpen" :point="point" :points="props.map.points"
+            @modal-close="isModalOpen = false" @add-point="onAddPoint" />
         <div class="map-main">
             <!-- Map Name -->
-            <template v-if="editingMapName">
-                <input v-model="editMapName">
-                <button @click="updateMapName">Update</button>
-            </template>
-            <template v-else>
-                <h2 class="map-name" @dblclick="editingMapName = true">{{ props.map.title }}</h2>
-            </template>
+
+            <InlineEdit v-if="activeMap" class="map-name" :model-value="activeMap.title" placeholder="Map name"
+                @save="(val) => mapStore.updateMapName(activeMap.id, val)">
+                <template #display>
+                    <h2>{{ activeMap.title }}</h2>
+                </template>
+            </InlineEdit>
 
             <div class="two-column">
-
                 <div class="map-wrapper">
                     <div class="overlay">
                         <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
                         <span class="coord-y">Lon: {{ Math.floor(picH) }}</span>
                         <span class="reset" @click="resetMap">reset</span>
                     </div>
-
-                    <div class="map" @mouseover="isHovering = true" @mousedown="onMouseDown" @mousemove="onMouseMove"
-                        @mouseleave="onMouseLeave" @wheel="onWheel" @dblclick="onDoubleClick"
-                        :style="{ cursor: isDragging ? 'grabbing' : 'crosshair' }">
+                    <div v-if="activeMap" class="map" ref="mapRef" @mouseover="isHovering = true" @mousedown="onMouseDown"
+                        @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel"
+                        @dblclick="onDoubleClick" :style="{ cursor: isDragging ? 'grabbing' : 'crosshair' }">
                         <div class="image-container"
                             :style="{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`, transition: transitionStyle }">
-
                             <div class="points">
-                                <Point v-for="p in props.map.points" :key="p.id" :point="p" :hoverPoint="hoverPoint"
-                                    @click="selectPointHandler($event, p)" @dblclick="editPoint(p)"
+                                <Point v-for="p in props.map.points" :key="p.id" :point="p"
+                                    :hoverPoint="hoverPoint?.name" @click="selectPoint($event, p)"
+                                    @dblclick="editPoint(p)"
                                     :style="{ left: p.x + 'px', top: p.y + 'px', position: 'absolute', zIndex: 100 }" />
                             </div>
-
                             <img :src="imageSrc" class="map-image" />
                         </div>
-
-                        <span class="vertical-line" v-if="isHovering" :style="{ left: parentMousePosition.x + 'px' }">
+                        <span class="vertical-line" v-if="isHovering"
+                            :style="{ left: parentMousePosition.x + 'px' }">
                             <div class="vertical-line-text">{{ Math.floor(picW) }}</div>
                         </span>
-                        <span class="horizontal-line" v-if="isHovering" :style="{ top: parentMousePosition.y + 'px' }">
+                        <span class="horizontal-line" v-if="isHovering"
+                            :style="{ top: parentMousePosition.y + 'px' }">
                             <div class="horizontal-line-text">{{ Math.floor(picH) }}</div>
                         </span>
                     </div>
+                    <div v-else>
+                        No map found
+                    </div>
                 </div>
-
                 <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
                     <tab title="All Maps">
                         <!-- Add Map Instance -->
                         <div class="add-map">
                             <input type="text" placeholder="Map Instance Title" :value="newMapTitle"
+                                @keydown.enter="emit('add-map-instance')"
                                 @input="emit('update:newMapTitle', $event.target.value)" />
-
                             <button @click="emit('add-map-instance')">
                                 Add Map
                             </button>
                         </div>
-
                         <!-- Map List -->
                         <div class="map-list">
                             <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
                                 class="map-instance-name" @click="mapStore.setActiveMap(id)">
-                                {{ mapStore.mapsById[id].title }}
+
+                                <!-- {{ mapStore.mapsById[id].title }} -->
+
+                                <InlineEdit class="map-tab-name" :model-value="mapStore.mapsById[id].title"
+                                    placeholder="Map name" deletable
+                                    @save="(val) => mapStore.updateMapName(activeMap.id, val)"
+                                    @delete="confirmDeleteMap(id)">
+                                    {{ mapStore.mapsById[id].title }}
+                                </InlineEdit>
                             </div>
                         </div>
-
                     </tab>
                     <tab title="All Points">
                         <div v-if="!props.map.points?.length">
                             Double click anywhere on the map to create a point.
                         </div>
-
                         <div class="points-container">
                             <div v-for="category in categories" :key="category.name">
                                 <h2 v-if="matchCount(category)">
@@ -391,7 +355,6 @@ const deleteMapHandler = (mapId) => {
                                     <div v-if="p.icon === category.name" class="point-display"
                                         @mouseover="onMouseOver(p)" @mouseleave="onMouseHoverLeave"
                                         @click.prevent="zoomToPoint(p)" @dblclick="activeTabIndex.value = 1;">
-                                        <!-- @click="toggleActive(p.name)" -->
                                         <div class="front">
                                             <div class="color">
                                                 <div class="circle" :style="{ background: p.color }"></div>
@@ -412,7 +375,6 @@ const deleteMapHandler = (mapId) => {
                             </div>
                         </div>
                     </tab>
-
                     <tab title="Point">
                         <div v-if="selectedPoint">
                             <div class="selected-point">
@@ -442,9 +404,6 @@ const deleteMapHandler = (mapId) => {
     </div>
 </template>
 <style scoped>
-/* .active {
-    outline: 2px solid yellow;
-} */
 .bx-x {
     position: absolute;
     top: .5em;
@@ -467,10 +426,7 @@ const deleteMapHandler = (mapId) => {
 }
 
 .point-display:hover {
-    /* box-shadow: 1px 1px 10px black; */
     cursor: pointer;
-    /* background: rgba(255, 255, 255, 0.5); */
-    /* outline: 2px solid yellow; */
     outline: 1px solid yellow;
     margin-left: 10px;
 }
@@ -481,8 +437,6 @@ const deleteMapHandler = (mapId) => {
 }
 
 .point-display .color .circle {
-    /* width: .75em; */
-    /* height: .75em; */
     width: 1em;
     height: 1em;
     border-radius: 50%;
@@ -492,7 +446,6 @@ const deleteMapHandler = (mapId) => {
     display: flex;
     align-items: center;
     gap: .5em;
-
 }
 
 .selected-point button {
@@ -509,11 +462,8 @@ const deleteMapHandler = (mapId) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* border: 1px solid black; */
     border-radius: 5px;
-    /* padding: .25em; */
     min-width: 50px;
-    /* margin: 0 .25em; */
 }
 
 .front {
@@ -538,38 +488,31 @@ const deleteMapHandler = (mapId) => {
     display: flex;
     justify-content: center;
     width: 100%;
-    /* height: 100vh; */
     gap: .5em;
+}
+
+.map-main {
+    padding: 2em;
 }
 
 .map-container {
     color: white;
     display: flex;
     flex-direction: column;
-    /* justify-content: center; */
     align-items: center;
     position: relative;
-    /* background-color: #fbe6a5; */
-    background-color: black;
+    background-color: #141414;
     width: 100%;
-    /* Make it take full width */
     height: 100%;
-    /* Make it take full height */
 }
 
 .map {
     position: relative;
     overflow: hidden;
-    /* width: 100%; */
-    /* height: 100%; */
-    /* height: calc(max(80vh, 500px)); */
-    /* width: 100%; */
-    /* height: auto; */
     min-width: 25vw;
     min-height: 25vw;
     width: 50vw;
     height: 50vw;
-    /* outline: 2px solid black; */
     box-shadow: 0 0 15px black;
 }
 
@@ -577,6 +520,15 @@ const deleteMapHandler = (mapId) => {
     font-size: 1.5em;
     padding: 1em;
     text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+.map-tab-name {
+    padding: .25em .5em;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
 }
 
 .map-instance-name {
@@ -627,23 +579,14 @@ const deleteMapHandler = (mapId) => {
     top: 0;
     left: 0;
     transform-origin: top left;
-    /* Set origin for scaling */
     width: 100%;
-    /* height: auto; */
     height: 100%;
 }
 
 .map-image {
     display: block;
-    /* Remove inline spacing */
-    /* object-position: -1% -1%; */
-    /* min-width: 400px; */
-    /* min-height: 400px; */
     width: 100%;
     height: 100%;
-    /* max-width: none; */
-    /* aspect-ratio: 1 / 1; */
-    /* object-fit: cover; */
 }
 
 .vertical-line,
@@ -680,7 +623,6 @@ const deleteMapHandler = (mapId) => {
         1px -1px 0 black,
         -1px 1px 0 black,
         1px 1px 0 black;
-    /* Adjust color and position for stroke */
 }
 
 .coord-x,
@@ -689,8 +631,8 @@ const deleteMapHandler = (mapId) => {
     align-items: center;
     padding: 0 1em;
     margin: .25em;
-    outline: 1px solid black;
-    border-radius: 5px;
+    outline: 1px solid white;
+    /* border-radius: 5px; */
 }
 
 .reset {
@@ -699,24 +641,23 @@ const deleteMapHandler = (mapId) => {
     background: none;
     padding: 0 1em;
     margin: .25em;
-    outline: 1px solid black;
+    color: black;
+    background: white;
+    outline: 1px solid white;
 }
 
 .reset:hover {
     cursor: pointer;
     color: white;
-    /* outline: none; */
     outline: 1px solid white;
     background: black;
 }
 
 .overlay {
-    /* position: absolute; */
     z-index: 1;
     display: flex;
     width: 100%;
     justify-content: flex-end;
-    /* margin: .25em; */
 }
 
 .overlay-coords {
