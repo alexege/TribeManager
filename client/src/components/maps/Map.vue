@@ -289,6 +289,7 @@ const confirmDeleteMap = (mapId) => {
                 @save="(val) => mapStore.updateMapName(activeMap.id, val)">
                 <template #display>
                     <h2>{{ activeMap.title }}</h2>
+                    <span>({{ activeMap.baseMapName }})</span>
                 </template>
             </InlineEdit>
 
