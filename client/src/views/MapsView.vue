@@ -121,9 +121,9 @@ onMounted(() => {
 }
 
 .thumbnail.active {
-    border-color: cyan;
-    color: cyan;
-    background-color: rgba(255, 255, 255, 0.25);
+    border-color: var(--orange);
+    color: var(--orange);
+    background-color: var(--glitchy-grey);
 }
 
 /* Add Map */

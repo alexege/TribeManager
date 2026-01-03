@@ -82,12 +82,12 @@ const filteredMapIds = computed(() =>
 watch(filteredMapIds, () => {
     activeTabIndex.value = 0;
 
-    console.log("filteredMapIds", filteredMapIds.value)
-
     if (filteredMapIds.value.length > 0) {
         activeMapId.value = filteredMapIds.value[0]
         mapStore.setActiveMap(filteredMapIds.value[0])
     }
+
+    resetMap()
 })
 
 // ===== Mouse / Map Events =====
