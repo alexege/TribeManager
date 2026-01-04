@@ -1,8 +1,7 @@
 <script setup>
 import { ref, shallowRef, onMounted, onBeforeUnmount, watch } from 'vue'
 import slider from '@/components/inputs/Slider.vue';
-import ColorDropdown from '@//components/inputs/ColorDropdown.vue';
-
+import ColorDropdown from '@/components/inputs/ColorDropdown.vue';
 const emit = defineEmits(['update-point', 'modal-close'])
 const props = defineProps(['point', 'mapId'])
 const editPoint = shallowRef(props.point) //Made shallow so it doesn't live update
@@ -37,7 +36,6 @@ const categories = ref([{
     name: 'Waypoint',
     icon: ''
 }]);
-
 const onColorSelect = (color) => {
     editPoint.value.color = color
 }
@@ -65,7 +63,7 @@ const onSubmit = () => {
     emit('modal-close')
 }
 const onDelete = () => {
-    deletePoint(props.mapId, editPoint.value)
+    deletePoint(props.mapId, editPoint.value.id)
     emit('modal-close')
 }
 const target = ref(null);
@@ -124,13 +122,13 @@ const onPointSizeChange = (size) => {
                         <slider @point-size="onPointSizeChange" :point="editPoint" />
                     </div>
                     <div class="button-container">
-                        <button class="button" @click.stop="onDelete">
+                        <button class="delete-btn button" @click.stop="onDelete">
                             <span class="material-symbols-outlined">
                                 delete
                             </span>
                         </button>
-                        <button class="button" @click.stop="emit('modal-close')">Cancel</button>
-                        <button class="button" @click.stop="onSubmit">Update</button>
+                        <button class="cancel-btn button" @click.stop="emit('modal-close')">Cancel</button>
+                        <button class="update-btn button" @click.stop="onSubmit">Update</button>
                     </div>
                 </div>
             </div>
@@ -145,13 +143,15 @@ const onPointSizeChange = (size) => {
     max-width: 600px;
     margin: auto;
 }
-
+.container h2 {
+    text-align: center;
+    padding-bottom: 1.25em;
+}
 .form-group {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
 }
-
 .modal-mask {
     position: fixed;
     z-index: 9998;
@@ -161,64 +161,91 @@ const onPointSizeChange = (size) => {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
 }
-
 .modal-container {
     position: relative;
     width: 18.75em;
     margin: 150px auto;
     padding: 20px 30px;
-    background-color: #fff;
+    background-color: var(--void-black);
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
-    color: black;
+    color: var(--primary-color);
+    outline: 2px solid var(--primary-color);
 }
-
 .coordinates {
     display: flex;
 }
-
 .coordinates input[type="number"] {
     flex: 1;
     min-width: 0;
     padding: 5px;
 }
-
 label {
     flex: 0 0 140px;
     text-align: left;
 }
-
 .input-field {
     flex: 1;
     /* padding: 8px; */
 }
-
 .name {
     width: 100%;
     padding: 5px;
 }
-
 .button-container {
     display: flex;
     margin-top: 20px;
 }
-
 .button {
     flex: 1;
     padding: 3px 10px;
     margin-right: 10px;
 }
-
 .button:hover {
     cursor: pointer;
 }
-
 .button:last-child {
     margin-right: 0;
 }
-
 .button:first-child {
     flex: 0.25;
+}
+
+.update-btn {
+    color: var(--text-primary);
+    background: var(--alternate-color);
+    border: 1px solid var(--primary-color);
+    cursor: pointer;
+}
+
+.update-btn:hover {
+    background: var(--primary-color);
+    color: var(--void-black);
+    border: 1px solid transparent;
+}
+
+.cancel-btn {
+    color: var(--void-black);
+    background: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+.cancel-btn:hover {
+    cursor: pointer;
+    color: var(--primary-color);
+    background: var(--void-black);
+    border: 2px solid var(--primary-color);
+}
+
+.delete-btn {
+    color: var(--orange-muted);
+    background: var(--glitchy-grey);
+    border: 2px solid var(--secondary-bg-color);
+}
+.delete-btn:hover {
+    cursor: pointer;
+    color: var(--primary-color);
+    background: var(--void-black);
+    border: 2px solid var(--primary-color);
 }
 
 .exit {
@@ -227,7 +254,6 @@ label {
     right: 5px;
     cursor: pointer;
 }
-
 textarea {
     width: 100%;
     padding: .25em;

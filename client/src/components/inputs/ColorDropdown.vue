@@ -41,6 +41,7 @@ const selectColor = (color, event) => {
     flex: 1;
     position: relative;
     display: inline-block;
+    background: white;
 }
 
 .dropdown-toggle {
@@ -61,6 +62,7 @@ const selectColor = (color, event) => {
 
 .color-text {
     margin: 0 10px;
+    color: black;
 }
 
 .dropdown-menu {

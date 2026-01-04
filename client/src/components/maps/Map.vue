@@ -1,15 +1,15 @@
-<script setup>
 
+<script setup>
 // ===== Imports =====
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useMapStore } from '@/stores/map.store'
-
 import Point from '@/components/maps/Point.vue'
 import Tab from '@/components/tabs/Tab.vue'
 import Tabs from '@/components/tabs/Tabs.vue'
 import AddPoint from '@/components/modals/AddPoint.vue'
 import EditPoint from '@/components/modals/EditPoint.vue'
-import InlineEdit from '../inputs/InlineEdit.vue'
+import InlineEdit from '@/components/inputs/InlineEdit.vue'
+import ToggleSwitch from '@/components/inputs/ToggleSwitch.vue'
 
 // ===== Props & Emits =====
 const props = defineProps({
@@ -18,12 +18,10 @@ const props = defineProps({
     baseMaps: Array,
     newMapTitle: String
 })
-
 const emit = defineEmits([
     'add-map-instance',
     'update:newMapTitle'
 ])
-
 // ===== Store =====
 const mapStore = useMapStore()
 const {
@@ -33,7 +31,6 @@ const {
     categories,
     deleteMapInstance
 } = mapStore
-
 const activeMap = computed(() => mapStore.activeMap)
 // const map = computed(() => mapStore.activeMap)
 const activeMapId = computed(() => mapStore.activeMapId)
@@ -42,33 +39,28 @@ const activeMapId = computed(() => mapStore.activeMapId)
 const MIN_SCALE = 0.5
 const TRANSITION_MS = 300
 const ZOOM_TO_POINT_SCALE = 2
-
 // ===== Refs =====
 const mapRef = ref(null)
 const activeMapEl = ref(null)
-
 // ===== Map Transform State =====
 const scale = ref(1) // Track the current scale
 const translate = ref({ x: 0, y: 0 }) // Track the translation
 const resetting = ref(false)
-
 // ===== Mouse State =====
 const isDragging = ref(false)
 const isHovering = ref(false)
 const parentMousePosition = ref({ x: 0, y: 0 })
 const picW = ref(0)
 const picH = ref(0)
-
 // ===== Point / Selection State =====
 const selectedPoint = ref(null)
 const hoverPoint = ref(null)
 const point = ref({})
-
+const collapsedCategories = ref({})
 // ===== Modals =====
 const isModalOpen = ref(false)
 const showEditModal = ref(false)
 const activeTabIndex = ref(0)
-
 // ===== Computed =====
 const transitionStyle = computed(() => resetting.value ? 'transform 0.3s ease' : 'none')
 const imageSrc = computed(() => props.map.img ?? '')
@@ -78,24 +70,19 @@ const filteredMapIds = computed(() =>
         return map?.baseMapName === props.activeBaseMap
     })
 )
-
 watch(filteredMapIds, () => {
     activeTabIndex.value = 0;
-
     if (filteredMapIds.value.length > 0) {
         activeMapId.value = filteredMapIds.value[0]
         mapStore.setActiveMap(filteredMapIds.value[0])
     }
-
     resetMap()
 })
-
 // ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
     isDragging.value = true
 }
-
 const onMouseMove = (event) => {
     const mapWidth = event.target.getBoundingClientRect().width
     const mapHeight = event.target.getBoundingClientRect().height
@@ -111,19 +98,16 @@ const onMouseMove = (event) => {
         translate.value.y += deltaY
     }
 }
-
 const onMouseUp = () => {
     isDragging.value = false
     if (scale.value < 1) {
         resetMap()
     }
 }
-
 const onMouseLeave = () => {
     isDragging.value = false
     isHovering.value = false
 }
-
 const onWheel = (event) => {
     event.preventDefault()
     const mapContainer = event.currentTarget // Reference to the map container
@@ -148,10 +132,8 @@ const onWheel = (event) => {
         scale.value = newScale
     }
 }
-
 const onContainerMouseMove = (event) => {
     const container = event.target.closest('.map')
-
     if (container) {
         const rect = container.getBoundingClientRect()
         const offsetX = event.clientX - rect.left
@@ -159,7 +141,6 @@ const onContainerMouseMove = (event) => {
         parentMousePosition.value = { x: offsetX, y: offsetY }
     }
 }
-
 const onDoubleClick = (event) => {
     event.preventDefault()
     const mapWidth = event.target.getBoundingClientRect().width
@@ -171,7 +152,6 @@ const onDoubleClick = (event) => {
     activeMapEl.value = event.target
     isModalOpen.value = true
 }
-
 // ===== Reset Map =====
 const resetMap = () => {
     resetting.value = true;
@@ -181,7 +161,6 @@ const resetMap = () => {
         resetting.value = false;
     }, TRANSITION_MS); // Adjust this duration to match your CSS transition
 };
-
 // ===== Lifecycle =====
 onMounted(() => {
     document.addEventListener('mouseup', onMouseUp)
@@ -211,13 +190,13 @@ const onAddPoint = (value) => {
     }
     createPoint(props.map.id, newPoint)
     closeModal()
+    activeTabIndex.value = 1
 }
 const selectPoint = (e, point) => {
     if (e) e.stopPropagation()
     selectedPoint.value = point
     activeTabIndex.value = 1
 }
-
 // Edit Logic
 const editPoint = (point) => {
     selectedPoint.value = point
@@ -254,51 +233,81 @@ const onMouseHoverLeave = () => {
 }
 //Check to see if the category has any matching points
 const matchCount = (category) => {
-    return props.map.points?.filter(point => point.icon == category.name).length;
+    return activeMapPoints.value?.filter(point => point.icon == category.name).length;
 }
 
-// Delete Map
-const deleteMapHandler = () => {
-    if (!props.map?.id) return
-    if (confirm(`Delete "${props.map.title}"?`)) {
-        deleteMapInstance(props.map.id)
-    }
+const toggleCategory = (categoryName) => {
+    collapsedCategories.value[categoryName] =
+        !collapsedCategories.value[categoryName]
 }
+
+const categoryVisibility = ref({})
+onMounted(() => {
+  categories.forEach(cat => {
+    categoryVisibility.value[cat.name] = true
+  })
+})
+
+const visiblePoints = computed(() => {
+  if (!props.map?.points) return []
+
+  return activeMapPoints.value.filter(point => {
+    return categoryVisibility.value[point.icon] !== false
+  })
+})
+
+const categoriesWithPoints = computed(() => {
+  if (!props.map?.points?.length) return []
+
+  return categories.filter(category =>
+    activeMapPoints.value.some(p => p.icon === category.name)
+  )
+})
+
+const activeMapPoints = computed(() => {
+  return activeMap.value?.points ?? []
+})
 
 const confirmDeleteMap = (mapId) => {
     const map = mapStore.mapsById[mapId]
     if (!map) return
-
     const confirmed = confirm(`Delete "${map.title}"?`)
     if (!confirmed) return
-
     mapStore.deleteMapInstance(mapId)
 }
+
 </script>
 <template>
     <div class="map-container" @mousemove="onContainerMouseMove" v-if="activeMap">
-        <i class="bx bx-x" @click="deleteMapHandler(props.map.id)"></i>
         <EditPoint v-if="showEditModal" :point="selectedPoint" :mapId="props.map.id"
             @modal-close="showEditModal = false" />
-        <AddPoint v-if="isModalOpen" :point="point" :points="props.map.points"
+        <AddPoint v-if="isModalOpen" :point="point" :points="activeMapPoints"
             @modal-close="isModalOpen = false" @add-point="onAddPoint" />
         <div class="map-main">
             <!-- Map Name -->
-
-            <InlineEdit v-if="activeMap" class="map-name" :model-value="activeMap.title" placeholder="Map name"
+            <div class="map-name-wrapper" v-if="filteredMapIds.length > 0">
+                <InlineEdit v-if="activeMap" class="map-name" :model-value="activeMap.title" placeholder="Map name"
                 @save="(val) => mapStore.updateMapName(activeMap.id, val)">
                 <template #display>
-                    <h2>{{ activeMap.title }}</h2>
-                    <span>({{ activeMap.baseMapName }})</span>
-                </template>
-            </InlineEdit>
-
+                        <h2>{{ activeMap.title }}</h2>
+                    </template>
+                </InlineEdit>
+                <span>({{ activeMap.baseMapName }})</span>
+            </div>
+            <div v-else class="map-name-wrapper placeholder">
+            <h2 class="map-name placeholder-text">
+                No map selected
+            </h2>
+            <span class="placeholder-subtext">
+                Add or select a map to continue
+            </span>
+            </div>
             <div class="two-column">
                 <div class="map-wrapper" v-if="filteredMapIds.length > 0">
                     <div class="overlay">
-                        <span class="coord-x">Lat: {{ Math.floor(picW) }}</span>
-                        <span class="coord-y">Lon: {{ Math.floor(picH) }}</span>
-                        <span class="reset" @click="resetMap">reset</span>
+                        <span class="coord-x"><span class="label">Lat:</span> {{ Math.floor(picW) }}</span>
+                        <span class="coord-y"><span class="label">Lon:</span> {{ Math.floor(picH) }}</span>
+                        <span class="reset" @click="resetMap">reset zoom</span>
                     </div>
                     <div class="map" ref="mapRef" @mouseover="isHovering = true" @mousedown="onMouseDown"
                         @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel"
@@ -306,7 +315,7 @@ const confirmDeleteMap = (mapId) => {
                         <div class="image-container"
                             :style="{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`, transition: transitionStyle }">
                             <div class="points">
-                                <Point v-for="p in props.map.points" :key="p.id" :point="p"
+                                <Point v-for="p in visiblePoints" :key="p.id" :point="p"
                                     :hoverPoint="hoverPoint?.name" @click="selectPoint($event, p)"
                                     @dblclick="editPoint(p)"
                                     :style="{ left: p.x + 'px', top: p.y + 'px', position: 'absolute', zIndex: 100 }" />
@@ -324,13 +333,13 @@ const confirmDeleteMap = (mapId) => {
                     </div>
                 </div>
                 <div v-else class="no-map">
-                    No map found. Please add one to continue...
+                    No map found. Please add one to continue... ->
                 </div>
                 <Tabs @tabChanged="onTabChange" :activeTabIndex="activeTabIndex" class="tabs-container">
                     <tab title="All Maps">
                         <!-- Add Map Instance -->
                         <div class="add-map">
-                            <input type="text" placeholder="Map Instance Title" :value="newMapTitle"
+                            <input type="text" placeholder="Add Map" :value="newMapTitle"
                                 @keydown.enter="emit('add-map-instance')"
                                 @input="emit('update:newMapTitle', $event.target.value)" />
                             <button @click="emit('add-map-instance')">
@@ -341,9 +350,7 @@ const confirmDeleteMap = (mapId) => {
                         <div class="map-list">
                             <div v-for="id in filteredMapIds" :key="id" :class="{ active: id === activeMapId }"
                                 class="map-instance-name" @click="mapStore.setActiveMap(id)">
-
                                 <!-- {{ mapStore.mapsById[id].title }} -->
-
                                 <InlineEdit class="map-tab-name" :model-value="mapStore.mapsById[id].title"
                                     placeholder="Map name" deletable
                                     @save="(val) => mapStore.updateMapName(activeMap.id, val)"
@@ -354,55 +361,78 @@ const confirmDeleteMap = (mapId) => {
                         </div>
                     </tab>
                     <tab title="All Points">
-                        <div v-if="!props.map.points?.length">
+                        <div v-if="!activeMapPoints?.length">
                             Double click anywhere on the map to create a point.
                         </div>
                         <div class="points-container">
-                            <div v-for="category in categories" :key="category.name">
-                                <h2 v-if="matchCount(category)">
+                            <template v-for="category in categoriesWithPoints" :key="category.name">
+
+                                <div v-if="matchCount(category)" class="category-wrapper">
+                                    <div class="category-header" :class="{ collapsed: collapsedCategories[category.name]}" @click="toggleCategory(category.name)">
                                     <span class="material-symbols-outlined">{{ category.icon }}</span> - {{
                                         category.name }}
-                                </h2>
-                                <template v-for="p in props.map.points" :key="p.id">
-                                    <div v-if="p.icon === category.name" class="point-display"
-                                        @mouseover="onMouseOver(p)" @mouseleave="onMouseHoverLeave"
-                                        @click.prevent="zoomToPoint(p)" @dblclick="activeTabIndex.value = 1;">
-                                        <div class="front">
-                                            <div class="color">
-                                                <div class="circle" :style="{ background: p.color }"></div>
-                                            </div>
-                                            <div class="coords">[{{ p.pX }}, {{ p.pY }}]</div>
-                                        </div>
-                                        <div class="mid">
-                                            <div class="name">{{ p.name }}</div>
-                                        </div>
-                                        <div class="end">
-                                            <a @click.prevent="editPoint(p)"><span
-                                                    class="material-symbols-outlined">edit</span></a>
-                                            <a @click.prevent="deletePointHandler(p)"><span
-                                                    class="material-symbols-outlined">delete</span></a>
-                                        </div>
+
                                     </div>
-                                </template>
-                            </div>
+                                    <div class="category-controls">
+                                        <span class="chevron" @click="toggleCategory(category.name)">
+                                            {{ collapsedCategories[category.name] ? '&#x25BE;' : '&#x25B4;' }}
+                                        </span>
+                                        <ToggleSwitch class="toggle" v-model="categoryVisibility[category.name]"/>
+                                    </div>
+                                </div>
+                                <transition name="collapse">
+                                    <div v-if="!collapsedCategories[category.name]" class="category-content">
+                                        <template v-for="p in activeMapPoints" :key="p.id">
+                                            <div v-if="p.icon === category.name && categoryVisibility[category.name]" class="point-display"
+                                                @mouseover="onMouseOver(p)" @mouseleave="onMouseHoverLeave"
+                                                @click.prevent="zoomToPoint(p)" @dblclick="activeTabIndex.value = 1;">
+                                                <div class="front">
+                                                    <div class="color">
+                                                        <div class="circle" :style="{ background: p.color }"></div>
+                                                    </div>
+                                                    <div class="coords">[{{ p.pX }}, {{ p.pY }}]</div>
+                                                </div>
+                                                <div class="mid">
+                                                    <div class="name">{{ p.name }}</div>
+                                                </div>
+                                                <div class="end">
+                                                    <a @click.prevent="editPoint(p)"><span
+                                                            class="material-symbols-outlined">edit</span></a>
+                                                    <a @click.prevent="deletePointHandler(p)"><span
+                                                            class="material-symbols-outlined">delete</span></a>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </transition>
+                            </template>
                         </div>
                     </tab>
                     <tab title="Point">
-                        <div v-if="selectedPoint">
+                        <div v-if="selectedPoint" class="selected-point-wrapper">
                             <div class="selected-point">
                                 <h3>{{ selectedPoint.name }}</h3>
+
+                                <button
+                                    class="edit-btn"
+                                    @click="editPoint(selectedPoint)"
+                                    title="Edit point"
+                                >
+                                    <span class="material-symbols-outlined">edit</span>
+                                </button>
+
                             </div>
                             <div class="coord-container">
-                                <div class="coord">X: {{ selectedPoint.pX }}</div>
-                                <div class="coord">Y: {{ selectedPoint.pY }}</div>
+                                <div class="coord"><span class="label">X:</span> {{ selectedPoint.pX }}</div>
+                                <div class="coord"><span class="label">Y:</span> {{ selectedPoint.pY }}</div>
                             </div>
-                            <div>Color: {{ selectedPoint.color }}</div>
-                            <div>Category: {{ selectedPoint.icon }}</div>
-                            <div>Size: {{ selectedPoint.size }}</div>
-                            <div>Description: {{ selectedPoint.description }}</div>
+                            <div><span class="label">Color:</span> {{ selectedPoint.color }}</div>
+                            <div><span class="label">Category:</span> {{ selectedPoint.icon }}</div>
+                            <div><span class="label">Size:</span> {{ selectedPoint.size }}</div>
+                            <div><span class="label">Description:</span> {{ selectedPoint.description || '...' }}</div>
                         </div>
                         <div v-else>
-                            <template v-if="!props.map.points?.length">
+                            <template v-if="!activeMapPoints?.length">
                                 Double click anywhere on the map to create a point.
                             </template>
                             <template v-else>
@@ -416,10 +446,8 @@ const confirmDeleteMap = (mapId) => {
     </div>
 </template>
 <style scoped>
-.map-list .active {
-    color: cyan;
-    outline: 1px solid cyan;
-    background: rgba(255, 255, 255, 0.15);
+.label {
+    color: var(--primary-color);
 }
 
 .no-map {
@@ -431,19 +459,17 @@ const confirmDeleteMap = (mapId) => {
     min-height: 25vw;
     width: 50vw;
     height: 50vw;
+    outline: 1px solid var(--orange);
 }
-
 .bx-x {
     position: absolute;
     top: .5em;
     right: .5em;
     cursor: pointer;
 }
-
 .bx-x:hover {
     color: yellow;
 }
-
 .point-display {
     display: grid;
     align-items: center;
@@ -453,77 +479,86 @@ const confirmDeleteMap = (mapId) => {
     border-radius: 5px;
     transition: margin-left 300ms ease;
 }
-
 .point-display:hover {
     cursor: pointer;
     outline: 1px solid yellow;
     margin-left: 10px;
 }
-
 .point-display .point {
     display: flex;
     justify-content: space-between;
 }
-
 .point-display .color .circle {
     width: 1em;
     height: 1em;
     border-radius: 50%;
 }
-
+.category-wrapper {
+    display: flex;
+    padding: 0 5px;
+    align-items: center;
+    justify-content: space-between;
+    outline: .5px solid var(--orange);
+}
+.category-wrapper .theme-switch {
+    justify-self: end;
+    outline: 1px solid red;
+}
+.category-controls {
+    display: flex;
+    flex-direction: row;
+    gap: .5em;
+}
+.category-controls .chevron {
+    font-size: 2em;
+}
 .selected-point {
     display: flex;
     align-items: center;
     gap: .5em;
 }
-
 .selected-point button {
     cursor: pointer;
 }
-
+.selected-point-wrapper .label {
+    color: var(--primary-color);
+}
 .coord-container {
     display: flex;
     align-items: center;
     align-items: center;
 }
-
 .coord {
     display: flex;
     align-items: center;
-    justify-content: center;
     border-radius: 5px;
     min-width: 50px;
+    gap: .25em;
 }
-
 .front {
     display: flex;
     align-items: center;
     gap: 1em;
 }
-
 .mid {
     display: flex;
     align-items: center;
     gap: 5px;
 }
-
 .end {
     display: flex;
     justify-content: center;
     gap: 1em;
 }
-
 .two-column {
     display: flex;
     justify-content: center;
     width: 100%;
     gap: .5em;
 }
-
 .map-main {
     padding: 2em;
 }
-
 .map-container {
     color: white;
     display: flex;
@@ -534,7 +569,6 @@ const confirmDeleteMap = (mapId) => {
     width: 100%;
     height: 100%;
 }
-
 .map {
     position: relative;
     overflow: hidden;
@@ -544,7 +578,6 @@ const confirmDeleteMap = (mapId) => {
     height: 50vw;
     box-shadow: 0 0 15px black;
 }
-
 .map-name {
     font-size: 1.5em;
     padding: 1em;
@@ -552,57 +585,65 @@ const confirmDeleteMap = (mapId) => {
     display: flex;
     justify-content: center;
 }
-
+.map-name-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1em;
+}
+.map-name-wrapper span {
+    font-size: .75rem;
+}
+.map-name-wrapper .inline-edit {
+    padding: 0;
+}
 .map-tab-name {
     padding: .25em .5em;
     text-align: center;
     display: flex;
     justify-content: space-between;
 }
-
+.map-list .active {
+    color: var(--text-primary);
+    outline: 1px solid var(--orange);
+    background: var(--glitch-grey);
+}
 .map-instance-name {
     padding: .5em;
     margin: 0.25em;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--glitch-grey);
 }
-
 .map-instance-name:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: cyan;
+    background: var(--border-subtle);
+    color: var(--orange);
 }
-
 .map-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
 }
-
 .points-container {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     font-size: 0.75em;
+    gap: .25em;
 }
-
 .points-container li {
     margin-left: 3em;
 }
-
 .points-container li::marker {
     font-size: 2em;
 }
-
 .points-container span {
     font-size: 1em;
     cursor: pointer;
 }
-
 .points-container span:hover {
     color: yellow;
 }
-
 .image-container {
     position: absolute;
     top: 0;
@@ -611,30 +652,25 @@ const confirmDeleteMap = (mapId) => {
     width: 100%;
     height: 100%;
 }
-
 .map-image {
     display: block;
     width: 100%;
     height: 100%;
 }
-
 .vertical-line,
 .horizontal-line {
     position: absolute;
     pointer-events: none;
     background: white;
 }
-
 .vertical-line {
     width: 2px;
     height: 100%;
 }
-
 .horizontal-line {
     height: 2px;
     width: 100%;
 }
-
 .horizontal-line-text {
     color: white;
     text-shadow:
@@ -643,7 +679,6 @@ const confirmDeleteMap = (mapId) => {
         -1px 1px 0 black,
         1px 1px 0 black;
 }
-
 .vertical-line-text {
     margin-left: 10px;
     color: white;
@@ -653,55 +688,116 @@ const confirmDeleteMap = (mapId) => {
         -1px 1px 0 black,
         1px 1px 0 black;
 }
-
 .coord-x,
 .coord-y {
     display: flex;
     align-items: center;
     padding: 0 1em;
     margin: .25em;
-    outline: 1px solid white;
+    gap: .25em;
+    outline: 1px solid var(--primary-color);
     /* border-radius: 5px; */
 }
-
 .reset {
     display: flex;
     align-items: center;
     background: none;
     padding: 0 1em;
     margin: .25em;
-    color: black;
-    background: white;
-    outline: 1px solid white;
+    outline: 1px solid var(--primary-color);;
 }
-
 .reset:hover {
     cursor: pointer;
-    color: white;
-    outline: 1px solid white;
-    background: black;
+    color: black;
+    outline: 1px solid var(--border-subtle);
+    background: var(--primary-color);
 }
-
 .overlay {
     z-index: 1;
     display: flex;
     width: 100%;
     justify-content: flex-end;
 }
-
 .overlay-coords {
     padding: .25em;
     min-width: 7em;
 }
-
 .tabs-container {
     width: 25vw;
 }
-
 .add-map {
     display: flex;
     gap: .5em;
     margin: 1em 0;
     justify-content: center;
 }
+
+/* Collapse Animation */
+/* Smooth expand / collapse */
+.collapse-enter-active,
+.collapse-leave-active {
+    transition:
+        max-height 0.25s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    overflow: hidden;
+}
+
+.collapse-enter-from,
+.collapse-leave-to {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+.collapse-enter-to,
+.collapse-leave-from {
+    max-height: 1000px; /* large enough for content */
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.category-header {
+    width: 100%;
+    cursor: pointer;
+}
+
+.category-header .chevron {
+    transition: transform 0.25s ease;
+}
+
+.category-header.collapsed .chevron {
+    transform: rotate(-90deg);
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    color: cyan;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.edit-btn:hover {
+    color: yellow;
+}
+
+.placeholder {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.placeholder-text {
+    font-size: 1.5em; /* matches .map-name */
+    padding: 1em;
+    text-align: center;
+    font-style: italic;
+}
+
+.placeholder-subtext {
+    font-size: .75rem;
+}
+
 </style>

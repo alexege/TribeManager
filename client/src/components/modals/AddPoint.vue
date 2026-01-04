@@ -1,8 +1,8 @@
+
 <script setup>
 import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount, watch } from "vue";
 import ColorDropdown from "@/components/inputs/ColorDropdown.vue";
 import Slider from "@/components/inputs/Slider.vue";
-
 const props = defineProps({
     point: Object,
     points: Object
@@ -51,7 +51,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
     document.removeEventListener('click', handleClickOutside);
 });
-
 const pointDetails = ref({
     name: `Point ${props.points.length + 1}`,
     description: props.point.description,
@@ -91,6 +90,11 @@ const updateY = () => {
     const mapHeight = map.getBoundingClientRect().height
     pointDetails.value.y = Math.floor(pointDetails.value.pY / 100 * mapHeight);
 };
+
+const addButton = ref(null)
+onMounted(() => {
+    addButton.value?.focus()
+})
 </script>
 <template>
     <div class="modal-mask">
@@ -128,13 +132,11 @@ const updateY = () => {
                     </div>
                     <div class="form-group">
                         <label for="size">Size:</label>
-
                         <slider @point-size="onPointSizeChange" :point="pointDetails" />
-
                     </div>
                     <div class="button-container">
-                        <button class="button" @click.stop="emit('modal-close')">Cancel</button>
-                        <button class="button" @click.stop="onSubmit">Add</button>
+                        <button class="cancel-btn button" @click.stop="emit('modal-close')">Cancel</button>
+                        <button class="add-btn button" @click.stop="onSubmit" ref="addButton">Add</button>
                     </div>
                 </div>
             </div>
@@ -142,10 +144,6 @@ const updateY = () => {
     </div>
 </template>
 <style scoped>
-* {
-    color: black;
-}
-
 .container {
     display: flex;
     flex-direction: column;
@@ -153,13 +151,11 @@ const updateY = () => {
     max-width: 600px;
     margin: auto;
 }
-
 .form-group {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
 }
-
 .modal-mask {
     position: fixed;
     z-index: 9998;
@@ -169,61 +165,79 @@ const updateY = () => {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
 }
-
 .modal-container {
     position: relative;
     width: 18.75em;
     margin: 150px auto;
     padding: 20px 30px;
-    background-color: #fff;
+    color: var(--primary-color);
+    background-color: var(--void-black);
+    /* background-color: white; */
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
-
     position: fixed;
     /* or absolute */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -90%);
+    outline: 2px solid var(--primary-color);
 }
-
 .coordinates {
     display: flex;
 }
-
 .coordinates input[type="number"] {
     flex: 1;
     min-width: 0;
     padding: 5px;
 }
-
 label {
     flex: 0 0 140px;
     text-align: left;
 }
-
 .input-field {
     flex: 1;
     /* padding: 8px; */
 }
-
 .name {
     width: 100%;
     padding: 5px;
 }
-
 .button-container {
     display: flex;
     margin-top: 20px;
 }
-
 .button {
     flex: 1;
     padding: 3px 10px;
     margin-right: 10px;
 }
-
 .button:last-child {
     margin-right: 0;
+}
+
+.add-btn {
+    color: var(--text-primary);
+    background: var(--alternate-color);
+    border: 1px solid var(--primary-color);
+    cursor: pointer;
+}
+
+.add-btn:hover {
+    background: var(--primary-color);
+    color: var(--void-black);
+    border: 1px solid transparent;
+}
+
+.cancel-btn {
+    color: var(--void-black);
+    background: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+.cancel-btn:hover {
+    cursor: pointer;
+    color: var(--primary-color);
+    background: var(--void-black);
+    border: 2px solid var(--primary-color);
 }
 
 .exit {
@@ -232,7 +246,6 @@ label {
     right: 5px;
     cursor: pointer;
 }
-
 textarea {
     width: 100%;
     padding: .25em;
