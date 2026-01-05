@@ -57,7 +57,7 @@ router.post("/login", async (req, res) => {
     );
 
     const refreshToken = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, role: user.role },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "7d" }
     );
@@ -76,7 +76,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/refresh", (req, res) => {
+router.post("/refresh", async (req, res) => {
   const token = req.cookies?.refreshToken;
 
   if (!token) {
@@ -86,11 +86,32 @@ router.post("/refresh", (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
+    // Fetch fresh user data
+    const user = await User.findById(decoded.userId).select('role');
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
     const newAccessToken = jwt.sign(
-      { userId: decoded.userId, role: decoded.role },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );
+
+    // Generate new refresh token (rotation)
+    const newRefreshToken = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Set new refresh token cookie
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.json({ token: newAccessToken });
   } catch (err) {

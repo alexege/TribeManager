@@ -7,10 +7,13 @@ import authRoutes from "./routes/auth.routes.js";
 import tribeRoutes from "./routes/tribe.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import playerRoutes from "./routes/player.routes.js";
+import mapRoutes from "./routes/map.routes.js";
+import pointRoutes from "./routes/point.routes.js";
 
 dotenv.config();
-
 const app = express();
+
+console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
 
 const corsOptions = {
   origin: "http://localhost:5173",
@@ -27,8 +30,14 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tribes", tribeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/players", playerRoutes);
+app.use("/api/maps", mapRoutes);
+app.use("/api/points", pointRoutes);
 
 const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
 
 mongoose
   .connect(process.env.MONGO_URI)

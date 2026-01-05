@@ -24,6 +24,27 @@ export const register = async (req, res) => {
       password: hashed,
     });
 
+    // Auto login
+    // const token = jwt.sign(
+    //   { id: user._id },
+    //   JWT_SECRET,
+    //   { expiresIn: "7d" }
+    // );
+
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   sameSite: "lax",
+    //   secure: false,
+    //   maxAge: 7 * 24 * 60 * 60 * 1000,
+    // });
+
+    // res.status(201).json({
+    //   user: {
+    //     id: user._id,
+    //     email: user.email,
+    //   },
+    // });
+
     res.status(201).json({ message: "User created" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -47,6 +68,13 @@ export const login = async (req, res) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
       expiresIn: "7d",
     });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false, //localhost only
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
 
     res.json({
       token,
