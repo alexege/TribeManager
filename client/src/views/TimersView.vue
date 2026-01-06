@@ -101,11 +101,12 @@ const handleDrop = (e, zoneId) => {
 
 /* Toolbar */
 .toolbar {
-  position: sticky;
-  /* top: 12px; */
-  /* left: 50%; */
-  /* transform: translateX(-50%); */
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
+  align-items: center;
   gap: 0.5em;
   padding: 0.5em 0.75em;
   background: rgba(0, 0, 0, 0.75);
