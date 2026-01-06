@@ -28,7 +28,7 @@ const setActiveMap = (map) => {
 /* Actions */
 const addMapInstance = () => {
     if (!newMapTitle.value || !selectedMapName.value) return
-    mapStore.addMapInstance({
+    mapStore.createMapInstance({
         baseMapName: selectedMapName.value,
         title: newMapTitle.value
     })
@@ -55,6 +55,14 @@ onMounted(() => {
     }
 })
 
+const createIsland = async () => {
+  try {
+    await mapStore.addTheIslandMap();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 </script>
 <template>
     <div class="container">
@@ -77,6 +85,11 @@ onMounted(() => {
                 @update:newMapTitle="newMapTitle = $event" @add-map-instance="addMapInstance" />
             <div v-else>
                 No map found...
+
+                <button @click="createIsland">
+                    Add The Island Map
+                </button>
+
             </div>
         </div>
 

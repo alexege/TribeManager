@@ -3,9 +3,11 @@
 // ===== Imports =====
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useMapStore } from '@/stores/map.store'
+
 import Point from '@/components/maps/Point.vue'
 import Tab from '@/components/tabs/Tab.vue'
 import Tabs from '@/components/tabs/Tabs.vue'
+
 import AddPoint from '@/components/modals/AddPoint.vue'
 import EditPoint from '@/components/modals/EditPoint.vue'
 import InlineEdit from '@/components/inputs/InlineEdit.vue'
@@ -18,10 +20,12 @@ const props = defineProps({
     baseMaps: Array,
     newMapTitle: String
 })
+
 const emit = defineEmits([
     'add-map-instance',
     'update:newMapTitle'
 ])
+
 // ===== Store =====
 const mapStore = useMapStore()
 const {
@@ -31,36 +35,51 @@ const {
     categories,
     deleteMapInstance
 } = mapStore
+
 const activeMap = computed(() => mapStore.activeMap)
 // const map = computed(() => mapStore.activeMap)
 const activeMapId = computed(() => mapStore.activeMapId)
+
+// ===== Helpers =====
+const loadPointsIfNeeded = async (mapId) => {
+  // If points have never been loaded for this map, fetch them
+  if (!mapStore.pointIdsByMap[mapId]) {
+    await mapStore.fetchPoints(mapId);
+  }
+};
 
 // ===== Constants =====
 const MIN_SCALE = 0.5
 const TRANSITION_MS = 300
 const ZOOM_TO_POINT_SCALE = 2
+
 // ===== Refs =====
 const mapRef = ref(null)
 const activeMapEl = ref(null)
+
 // ===== Map Transform State =====
 const scale = ref(1) // Track the current scale
 const translate = ref({ x: 0, y: 0 }) // Track the translation
 const resetting = ref(false)
+
 // ===== Mouse State =====
 const isDragging = ref(false)
 const isHovering = ref(false)
 const parentMousePosition = ref({ x: 0, y: 0 })
 const picW = ref(0)
 const picH = ref(0)
+
 // ===== Point / Selection State =====
 const selectedPoint = ref(null)
 const hoverPoint = ref(null)
 const point = ref({})
 const collapsedCategories = ref({})
+
 // ===== Modals =====
 const isModalOpen = ref(false)
 const showEditModal = ref(false)
 const activeTabIndex = ref(0)
+
 // ===== Computed =====
 const transitionStyle = computed(() => resetting.value ? 'transform 0.3s ease' : 'none')
 const imageSrc = computed(() => props.map.img ?? '')
@@ -78,6 +97,15 @@ watch(filteredMapIds, () => {
     }
     resetMap()
 })
+
+// ===== Lazy Load =====
+watch(
+  () => mapStore.activeMapId,
+  async (newMapId, oldMapId) => {
+    if (!newMapId || newMapId === oldMapId) return;
+    await loadPointsIfNeeded(newMapId);
+  }
+);
 // ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
@@ -162,7 +190,12 @@ const resetMap = () => {
     }, TRANSITION_MS); // Adjust this duration to match your CSS transition
 };
 // ===== Lifecycle =====
-onMounted(() => {
+onMounted(async () => {
+    await mapStore.fetchMaps();
+
+    if(mapStore.activeMapId) {
+        await loadPointsIfNeeded(mapStore.activeMapId);
+    }
     document.addEventListener('mouseup', onMouseUp)
 })
 onBeforeUnmount(() => {
@@ -185,10 +218,10 @@ const onAddPoint = (value) => {
         pX: percentX,
         pY: percentY,
         color: value.color,
-        icon: value.icon,
+        category: value.icon,
         size: value.size
     }
-    createPoint(props.map.id, newPoint)
+    createPoint(props.map._id, newPoint)
     closeModal()
     activeTabIndex.value = 1
 }

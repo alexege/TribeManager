@@ -22,7 +22,7 @@ export const requireAuth = (req, res, next) => {
     req.userId = decoded.userId;
     req.role = decoded.role; // Should Delete this?
     next();
-  } catch {
+  } catch (err) {
     console.log("Token verification failed:", err.message);
     res.status(401).json({ message: "Invalid token" });
   }

@@ -31,6 +31,11 @@ export const getPointsByMap = async (req, res) => {
 ========================= */
 export const createPoint = async (req, res) => {
   try {
+    console.log("📍 Create point request:");
+    console.log("Body:", req.body);
+    console.log("Map ID:", req.params.mapId);
+    console.log("User ID:", req.userId);
+
     const { category, x, y, label, notes } = req.body;
 
     if (x === undefined || y === undefined || !category) {
@@ -41,6 +46,8 @@ export const createPoint = async (req, res) => {
       _id: req.params.mapId,
       ownerId: req.userId,
     });
+
+    console.log("map is: ", map);
 
     if (!map) {
       return res.status(404).send("Map not found");
@@ -53,7 +60,7 @@ export const createPoint = async (req, res) => {
       y,
       label,
       notes,
-      createdBy: req.user._id,
+      createdBy: req.userId,
     });
 
     res.status(201).json(point);
@@ -76,7 +83,7 @@ export const updatePoint = async (req, res) => {
 
     const map = await Map.findOne({
       _id: point.mapId,
-      ownerId: req.user._id,
+      ownerId: req.userId,
     });
 
     if (!map) {
@@ -106,7 +113,7 @@ export const deletePoint = async (req, res) => {
 
     const map = await Map.findOne({
       _id: point.mapId,
-      ownerId: req.user._id,
+      ownerId: req.userId,
     });
 
     if (!map) {

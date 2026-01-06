@@ -18,15 +18,11 @@ const pointSchema = new mongoose.Schema(
     x: {
       type: Number,
       required: true,
-      min: 0,
-      max: 100,
     },
 
     y: {
       type: Number,
       required: true,
-      min: 0,
-      max: 100,
     },
 
     label: {

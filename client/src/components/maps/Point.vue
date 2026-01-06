@@ -76,7 +76,7 @@ const hideToolTip = () => {
 .tooltip {
     position: absolute;
     background-color: rgba(0, 0, 0, 0.75);
-    outline: 1px solid white;
+    outline: 1px solid var(--primary-color);
     color: white;
     padding: 5px;
     border-radius: 4px;
