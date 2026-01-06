@@ -7,8 +7,11 @@ export const useTimerStore = defineStore('timer', {
         widgets: [],
 
         // Grid configuration
-        gridCols: 4,
-        gridRows: 3,
+        gridCols: 3,
+        gridRows: 6,
+
+        // UI toggles
+        showGrid: true,
 
         // Drag state
         isDragging: false,
@@ -194,6 +197,10 @@ export const useTimerStore = defineStore('timer', {
                     this.gridCols--
                 }
             }
+        },
+
+        toggleGrid() {
+            this.showGrid = !this.showGrid
         }
     }
 })

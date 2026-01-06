@@ -38,6 +38,7 @@ const isAuthed = computed(() => auth.isAuthenticated)
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
+    margin-bottom: none;
     background: rgba(255, 255, 255, 0.1);
 }
 

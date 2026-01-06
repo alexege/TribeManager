@@ -1,4 +1,5 @@
 <script setup>
+import { ref, computed } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 import CountdownTimer from '@/components/timers/CountdownTimer.vue'
 import StopwatchTimer from '@/components/timers/StopwatchTimer.vue'
@@ -6,30 +7,51 @@ import StopwatchTimer from '@/components/timers/StopwatchTimer.vue'
 const props = defineProps({ widget: Object })
 const store = useTimerStore()
 
+const widgetEl = ref(null)
+const isDraggable = ref(false)
+
+const handleControlBarMouseDown = () => {
+  isDraggable.value = true
+}
+
 const handleDragStart = (e) => {
+  if (!isDraggable.value) {
+    e.preventDefault()
+    return
+  }
+
   store.startDrag(props.widget.id)
   e.dataTransfer.effectAllowed = 'move'
   e.dataTransfer.setData('text/plain', props.widget.id)
 
-  // Optional: Create a custom drag image
+  // Make dragged widget semi-transparent
   e.target.style.opacity = '0.5'
 }
 
 const handleDragEnd = (e) => {
   e.target.style.opacity = '1'
+  isDraggable.value = false
   store.endDrag()
 }
+
+// Check if widget is swapping
+const isSwapping = computed(() => props.widget.isSwapping)
 </script>
 
 <template>
   <div
+    ref="widgetEl"
     class="timer-widget"
-    draggable="true"
+    :class="{ swapping: isSwapping }"
+    :draggable="isDraggable"
     @dragstart="handleDragStart"
     @dragend="handleDragEnd"
   >
     <!-- Control Bar -->
-    <div class="control-bar">
+    <div
+      class="control-bar"
+      @mousedown="handleControlBarMouseDown"
+    >
       <div class="drag-handle">
         ⣿
       </div>
@@ -73,22 +95,27 @@ const handleDragEnd = (e) => {
 <style scoped>
 .timer-widget {
   width: 100%;
-  height: 100%;
+  /* height: 100%; */
   border-radius: 12px;
   background: linear-gradient(145deg, #0e0e0e, #000);
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,.06),
     0 12px 32px rgba(0,0,0,.7);
-  transition: box-shadow .2s ease, transform .2s ease;
+  transition:
+    box-shadow .2s ease,
+    transform .2s ease,
+    opacity .2s ease;
   display: flex;
   flex-direction: column;
-  cursor: grab;
   position: relative;
   z-index: 1;
 }
 
+.timer-widget[draggable="true"] {
+  cursor: grab;
+}
+
 .timer-widget[draggable="true"]:active {
-  opacity: 0.5;
   cursor: grabbing;
 }
 
@@ -99,8 +126,43 @@ const handleDragEnd = (e) => {
     0 16px 40px rgba(0,0,0,.9);
 }
 
-.timer-widget:active {
-  cursor: grabbing;
+/* Swapping animation */
+.timer-widget.swapping {
+  animation: swapPulse 0.4s ease-in-out;
+  z-index: 50;
+}
+
+@keyframes swapPulse {
+  0% {
+    transform: scale(1) rotate(0deg);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 165, 0, 0),
+      0 12px 32px rgba(0,0,0,.7);
+  }
+  25% {
+    transform: scale(1.05) rotate(2deg);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 165, 0, 0.8),
+      0 20px 50px rgba(255, 165, 0, 0.4);
+  }
+  50% {
+    transform: scale(0.95) rotate(-2deg);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 165, 0, 1),
+      0 20px 50px rgba(255, 165, 0, 0.6);
+  }
+  75% {
+    transform: scale(1.02) rotate(1deg);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 165, 0, 0.5),
+      0 16px 40px rgba(255, 165, 0, 0.3);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 165, 0, 0),
+      0 12px 32px rgba(0,0,0,.7);
+  }
 }
 
 .control-bar {
@@ -112,10 +174,14 @@ const handleDragEnd = (e) => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px 12px 0 0;
   min-height: 40px;
+  cursor: grab;
+}
+
+.control-bar:active {
+  cursor: grabbing;
 }
 
 .drag-handle {
-  cursor: grab;
   padding: 4px 8px;
   border-radius: 6px;
   background: rgba(255,255,255,0.08);
@@ -132,10 +198,6 @@ const handleDragEnd = (e) => {
   background: rgba(255,255,255,0.12);
 }
 
-.drag-handle:active {
-  cursor: grabbing;
-}
-
 .timer-name {
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
@@ -146,6 +208,7 @@ const handleDragEnd = (e) => {
   font-size: 14px;
   outline: none;
   transition: all .2s;
+  cursor: text;
 }
 
 .timer-name::placeholder {
@@ -209,5 +272,10 @@ const handleDragEnd = (e) => {
   opacity: 1;
   background: rgba(100, 150, 255, 0.3);
   transform: scale(1.1);
+}
+
+.toggle-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 </style>

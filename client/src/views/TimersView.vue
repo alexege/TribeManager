@@ -1,4 +1,5 @@
 <script setup>
+import ToggleSwitch from '@/components/inputs/ToggleSwitch.vue'
 import TimerWidget from '@/components/widgets/TimerWidget.vue'
 import { useTimerStore } from '@/stores/timer.store'
 
@@ -39,11 +40,14 @@ const handleDrop = (e, zoneId) => {
         <button @click="store.decreaseCols" :disabled="store.gridCols <= 1">−</button>
         <span class="count">{{ store.gridCols }}</span>
         <button @click="store.increaseCols" :disabled="store.gridCols >= 8">+</button>
+
+        <ToggleSwitch v-model="store.showGrid"/>
       </div>
     </div>
 
     <div
       class="timer-grid"
+      :class="{'grid--visible': !store.showGrid}"
       :style="{
         '--grid-cols': store.gridCols,
         '--grid-rows': store.gridRows
@@ -97,10 +101,10 @@ const handleDrop = (e, zoneId) => {
 
 /* Toolbar */
 .toolbar {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: sticky;
+  /* top: 12px; */
+  /* left: 50%; */
+  /* transform: translateX(-50%); */
   display: flex;
   gap: 0.5em;
   padding: 0.5em 0.75em;
@@ -163,7 +167,7 @@ const handleDrop = (e, zoneId) => {
 
 /* Grid Layout */
 .timer-grid {
-  width: 100%;
+  min-width: 80vw;
   height: 100%;
   display: grid;
   grid-template-columns: repeat(var(--grid-cols), 1fr);
@@ -309,5 +313,21 @@ const handleDrop = (e, zoneId) => {
   pointer-events: none;
   background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.5));
   z-index: 0;
+}
+
+
+
+
+.grid--visible .dropzone {
+  opacity: 1;
+}
+
+.grid:not(.grid--visible) .dropzone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.grid--visible .dropzone:not(.occupied) {
+    opacity: 0;
 }
 </style>
