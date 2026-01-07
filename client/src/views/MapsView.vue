@@ -19,20 +19,43 @@ watchEffect(() => {
     }
 })
 
-const setActiveMap = (map) => {
+const setActiveMap = async (map) => {
     selectedMapName.value = map.name
 
-    if (map.id) mapStore.setActiveMap(map.id)
+    if (map.id) {
+        mapStore.setActiveMap(map.id)
+        // Fetch points for this map if not already loaded
+        await loadPointsIfNeeded(map.id)
+    }
+}
+
+/* Helper to load points */
+const loadPointsIfNeeded = async (mapId) => {
+    if (!mapStore.pointIdsByMap[mapId]) {
+        await mapStore.fetchPoints(mapId)
+    }
 }
 
 /* Actions */
-const addMapInstance = () => {
+const addMapInstance = async () => {
     if (!newMapTitle.value || !selectedMapName.value) return
-    mapStore.createMapInstance({
-        baseMapName: selectedMapName.value,
-        title: newMapTitle.value
-    })
-    newMapTitle.value = ''
+
+    try {
+        const newMap = await mapStore.createMapInstance({
+            baseMapName: selectedMapName.value,
+            title: newMapTitle.value
+        })
+
+        newMapTitle.value = ''
+
+        // Set as active map and fetch its points
+        if (newMap && newMap.id) {
+            mapStore.setActiveMap(newMap.id)
+            await loadPointsIfNeeded(newMap.id)
+        }
+    } catch (err) {
+        console.error('Failed to create map:', err)
+    }
 }
 
 /* Points */
@@ -44,27 +67,40 @@ const addPoint = (mapId) => {
     const category = prompt('Category:') || 'default'
     mapStore.createPoint(mapId, { title, x, y, category })
 }
+
 const deletePoint = (mapId, pointId) => {
-    console.log("deleting point from mapsView")
     if (!confirm('Delete this point?')) return
     mapStore.deletePoint(mapId, pointId)
 }
 
-onMounted(() => {
+onMounted(async () => {
+    // Fetch all maps first
+    await mapStore.fetchMaps()
+
+    // If no maps exist, create default Island map
     if (!mapStore.mapIds.length) {
-        mapStore.ensureMapInstance('The Island')
+        await mapStore.ensureMapInstance('The Island')
+    }
+
+    // Load points for the active map
+    if (mapStore.activeMapId) {
+        await loadPointsIfNeeded(mapStore.activeMapId)
     }
 })
 
 const createIsland = async () => {
-  try {
-    await mapStore.addTheIslandMap();
-  } catch (err) {
-    console.error(err);
-  }
-};
-
+    try {
+        const newMap = await mapStore.addTheIslandMap()
+        if (newMap && newMap.id) {
+            mapStore.setActiveMap(newMap.id)
+            await loadPointsIfNeeded(newMap.id)
+        }
+    } catch (err) {
+        console.error(err)
+    }
+}
 </script>
+
 <template>
     <div class="container">
 
@@ -96,6 +132,7 @@ const createIsland = async () => {
 
     </div>
 </template>
+
 <style scoped>
 .container {
     margin: 0 auto;

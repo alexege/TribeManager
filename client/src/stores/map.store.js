@@ -160,34 +160,56 @@ export const useMapStore = defineStore("map", {
     },
 
     async createMapInstance({ baseMapName, title }) {
-      const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
-      if (!baseMap) return;
+  try {
+    // Find the base map to get the image
+    const baseMap = this.baseMaps.find(m => m.name === baseMapName)
+    if (!baseMap) {
+      throw new Error(`Base map "${baseMapName}" not found`)
+    }
 
-      const res = await fetch("/api/maps", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
-        body: JSON.stringify({
-          baseMapName,
-          title,
-          img: baseMap.img,
-        }),
-      });
+    const payload = {
+      baseMapName,
+      title,
+      img: baseMap.img
+    }
 
-      if (!res.ok) {
-        throw new Error("Failed to create map instance");
-      }
+    console.log('Creating map with payload:', payload)
 
-      const map = await res.json();
+    const response = await fetch('/api/maps', {
+      method: 'POST',
+      headers: getAuthHeaders(), // Make sure you have this helper
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    })
 
-      this.mapsById[map._id] = map;
-      this.mapIds.push(map._id);
-      this.pointIdsByMap[map._id] = [];
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error)
+    }
 
-      this.setActiveMap(map._id);
-      return map._id;
-    },
+    const newMap = await response.json()
+    console.log('Map created:', newMap)
 
+    // Add to store
+    this.mapIds.push(newMap._id)
+    this.mapsById[newMap._id] = {
+      id: newMap._id,
+      ...newMap
+    }
+
+    // Initialize empty points array for this map
+    this.pointIdsByMap[newMap._id] = []
+
+    // Return the created map
+    return {
+      id: newMap._id,
+      ...newMap
+    }
+  } catch (err) {
+    console.error('Failed to create map:', err)
+    throw err
+  }
+},
     async updateMapName(mapId, newTitle) {
       const res = await fetch(`/api/maps/${mapId}`, {
         method: "PUT",
@@ -229,23 +251,23 @@ export const useMapStore = defineStore("map", {
     },
 
     /* ---------- POINTS ---------- */
-    async fetchPoints(mapId) {
-      const res = await fetch(`/api/points/map/${mapId}`, {
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
+    // async fetchPoints(mapId) {
+    //   const res = await fetch(`/api/points/map/${mapId}`, {
+    //     headers: getAuthHeaders(),
+    //     credentials: "include",
+    //   });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch points");
-      }
-      const points = await res.json();
+    //   if (!res.ok) {
+    //     throw new Error("Failed to fetch points");
+    //   }
+    //   const points = await res.json();
 
-      this.pointIdsByMap[mapId] = [];
-      points.forEach((p) => {
-        this.pointsById[p._id] = p;
-        this.pointIdsByMap[mapId].push(p._id);
-      });
-    },
+    //   this.pointIdsByMap[mapId] = [];
+    //   points.forEach((p) => {
+    //     this.pointsById[p._id] = p;
+    //     this.pointIdsByMap[mapId].push(p._id);
+    //   });
+    // },
 
     // Add these methods to your map.store.js
 
@@ -382,36 +404,56 @@ async deletePoint(mapId, pointId) {
 },
 
 // FETCH POINTS
+// Replace your fetchPoints method in map.store.js with this debug version
+
 async fetchPoints(mapId) {
   try {
-    console.log('Fetching points for map:', mapId);
+    console.log('========================================')
+    console.log('📍 FETCH POINTS - START')
+    console.log('Map ID:', mapId)
+    console.log('Current pointIdsByMap:', JSON.parse(JSON.stringify(this.pointIdsByMap)))
+    console.log('Current pointsById:', JSON.parse(JSON.stringify(this.pointsById)))
 
     const response = await fetch(`/api/points/map/${mapId}`, {
       headers: getAuthHeaders(),
       credentials: 'include'
-    });
+    })
+
+    console.log('Response status:', response.status)
+    console.log('Response ok:', response.ok)
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
+      const error = await response.text()
+      console.error('Response error:', error)
+      throw new Error(error)
     }
 
-    const points = await response.json();
-    console.log('Points fetched:', points);
+    const points = await response.json()
+    console.log('📍 Points received from API:', points)
+    console.log('Number of points:', points.length)
 
     // Store points
-    this.pointIdsByMap[mapId] = points.map(p => p._id);
+    this.pointIdsByMap[mapId] = points.map(p => p._id)
+    console.log('Stored point IDs for map:', this.pointIdsByMap[mapId])
+
     points.forEach(point => {
-      this.pointsById[point._id] = {
+      const storedPoint = {
         id: point._id,
         ...point
-      };
-    });
+      }
+      this.pointsById[point._id] = storedPoint
+      console.log('Stored point:', storedPoint)
+    })
 
-    return points;
+    console.log('📍 AFTER STORING:')
+    console.log('pointIdsByMap[mapId]:', this.pointIdsByMap[mapId])
+    console.log('pointsById:', JSON.parse(JSON.stringify(this.pointsById)))
+    console.log('========================================')
+
+    return points
   } catch (err) {
-    console.error('Failed to fetch points:', err);
-    throw err;
+    console.error('❌ Failed to fetch points:', err)
+    throw err
   }
 },
 

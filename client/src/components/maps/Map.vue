@@ -44,9 +44,10 @@ const activeMapId = computed(() => mapStore.activeMapId)
 const loadPointsIfNeeded = async (mapId) => {
   // If points have never been loaded for this map, fetch them
   if (!mapStore.pointIdsByMap[mapId]) {
-    await mapStore.fetchPoints(mapId);
+    console.log('Loading points for map:', mapId)
+    await mapStore.fetchPoints(mapId)
   }
-};
+}
 
 // ===== Constants =====
 const MIN_SCALE = 0.5
@@ -89,23 +90,36 @@ const filteredMapIds = computed(() =>
         return map?.baseMapName === props.activeBaseMap
     })
 )
-watch(filteredMapIds, () => {
-    activeTabIndex.value = 0;
-    if (filteredMapIds.value.length > 0) {
-        activeMapId.value = filteredMapIds.value[0]
-        mapStore.setActiveMap(filteredMapIds.value[0])
+watch(filteredMapIds, async (newIds, oldIds) => {
+    console.log('Filtered maps changed:', newIds)
+    activeTabIndex.value = 0
+
+    if (newIds.length > 0) {
+        const firstMapId = newIds[0]
+        mapStore.setActiveMap(firstMapId)
+        await loadPointsIfNeeded(firstMapId)
     }
+
     resetMap()
-})
+}, { immediate: false })
 
 // ===== Lazy Load =====
+// ===== Watch for active map changes =====
 watch(
   () => mapStore.activeMapId,
   async (newMapId, oldMapId) => {
-    if (!newMapId || newMapId === oldMapId) return;
-    await loadPointsIfNeeded(newMapId);
-  }
-);
+    console.log('Active map changed:', { old: oldMapId, new: newMapId })
+
+    if (!newMapId || newMapId === oldMapId) return
+
+    // Load points for the new active map
+    await loadPointsIfNeeded(newMapId)
+
+    // Reset map view when switching
+    resetMap()
+  },
+  { immediate: false }
+)
 // ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
@@ -191,13 +205,22 @@ const resetMap = () => {
 };
 // ===== Lifecycle =====
 onMounted(async () => {
-    await mapStore.fetchMaps();
+    console.log('Map.vue mounted')
 
-    if(mapStore.activeMapId) {
-        await loadPointsIfNeeded(mapStore.activeMapId);
+    // Fetch maps if not already loaded
+    if (!mapStore.mapIds.length) {
+        await mapStore.fetchMaps()
     }
+
+    // Load points for active map if one exists
+    if (mapStore.activeMapId) {
+        console.log('Loading points for active map on mount:', mapStore.activeMapId)
+        await loadPointsIfNeeded(mapStore.activeMapId)
+    }
+
     document.addEventListener('mouseup', onMouseUp)
 })
+
 onBeforeUnmount(() => {
     document.removeEventListener('mouseup', onMouseUp)
 })
@@ -298,22 +321,35 @@ const categoriesWithPoints = computed(() => {
 })
 
 const activeMapPoints = computed(() => {
+  console.log('🔍 COMPUTING activeMapPoints')
+  console.log('activeMapId:', activeMapId.value)
+  console.log('mapStore.activeMapId:', mapStore.activeMapId)
+  console.log('pointIdsByMap:', mapStore.pointIdsByMap)
+  console.log('pointIdsByMap for active map:', mapStore.pointIdsByMap[activeMapId.value])
 
-    console.log('Active Map ID:', activeMapId.value)
-  console.log('Points by Map:', mapStore.pointIdsByMap)
-  console.log('Points by ID:', mapStore.pointsById)
+  if (!activeMapId.value) {
+    console.log('❌ No activeMapId')
+    return []
+  }
 
-  if (!activeMapId.value || !mapStore.pointIdsByMap[activeMapId.value]) {
+  if (!mapStore.pointIdsByMap[activeMapId.value]) {
+    console.log('❌ No point IDs for this map')
     return []
   }
 
   const pointIds = mapStore.pointIdsByMap[activeMapId.value]
-  const points = pointIds.map(id => mapStore.pointsById[id]).filter(Boolean)
+  console.log('Point IDs for map:', pointIds)
 
-  console.log('Active map points:', points)
+  const points = pointIds
+    .map(id => {
+      const point = mapStore.pointsById[id]
+      console.log(`Point ${id}:`, point)
+      return point
+    })
+    .filter(Boolean)
+
+  console.log('✅ Final active map points:', points)
   return points
-
-    //   return activeMap.value?.points ?? []
 })
 
 const confirmDeleteMap = (mapId) => {
