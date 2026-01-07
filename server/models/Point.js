@@ -9,12 +9,14 @@ const pointSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Category/icon for the point
     category: {
       type: String,
       required: true,
       trim: true,
     },
 
+    // Absolute pixel coordinates
     x: {
       type: Number,
       required: true,
@@ -25,16 +27,45 @@ const pointSchema = new mongoose.Schema(
       required: true,
     },
 
-    label: {
+    // Percentage coordinates (for responsive positioning)
+    pX: {
+      type: Number,
+      required: true,
+    },
+
+    pY: {
+      type: Number,
+      required: true,
+    },
+
+    // Display name for the point
+    name: {
       type: String,
       trim: true,
       default: "",
     },
 
-    notes: {
+    // Description/notes
+    description: {
       type: String,
       trim: true,
       default: "",
+    },
+
+    // Visual properties
+    color: {
+      type: String,
+      default: "#ff0000",
+    },
+
+    icon: {
+      type: String,
+      default: "location_on",
+    },
+
+    size: {
+      type: Number,
+      default: 10,
     },
 
     createdBy: {

@@ -59,11 +59,11 @@ const onSubmit = () => {
     console.log(`y: ${editPoint.value.y}`)
     console.log('editPoint:', editPoint.value)
     // emit('update-point', editPoint.value)
-    updatePoint(props.mapId, editPoint.value)
+    updatePoint(editPoint.value._id, editPoint.value)
     emit('modal-close')
 }
 const onDelete = () => {
-    deletePoint(props.mapId, editPoint.value.id)
+    deletePoint(props.mapId, editPoint.value._id)
     emit('modal-close')
 }
 const target = ref(null);

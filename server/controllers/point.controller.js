@@ -36,12 +36,14 @@ export const createPoint = async (req, res) => {
     console.log("Map ID:", req.params.mapId);
     console.log("User ID:", req.userId);
 
-    const { category, x, y, label, notes } = req.body;
+    const { category, x, y, pX, pY, name, description, color, icon, size } = req.body;
 
-    if (x === undefined || y === undefined || !category) {
+    // Validate required fields
+    if (x === undefined || y === undefined || pX === undefined || pY === undefined || !category) {
       return res.status(400).send("Missing required fields");
     }
 
+    // Verify map ownership
     const map = await Map.findOne({
       _id: req.params.mapId,
       ownerId: req.userId,
@@ -53,13 +55,19 @@ export const createPoint = async (req, res) => {
       return res.status(404).send("Map not found");
     }
 
+    // Create point with all fields
     const point = await Point.create({
       mapId: map._id,
       category,
       x,
       y,
-      label,
-      notes,
+      pX,
+      pY,
+      name: name || "",
+      description: description || "",
+      color: color || "#ff0000",
+      icon: icon || category,
+      size: size || 10,
       createdBy: req.userId,
     });
 
@@ -75,12 +83,18 @@ export const createPoint = async (req, res) => {
 ========================= */
 export const updatePoint = async (req, res) => {
   try {
+    console.log("📝 Update point request:");
+    console.log("Point ID:", req.params.id);
+    console.log("Body:", req.body);
+    console.log("User ID:", req.userId);
+
     const point = await Point.findById(req.params.id);
 
     if (!point) {
       return res.status(404).send("Point not found");
     }
 
+    // Verify map ownership
     const map = await Map.findOne({
       _id: point.mapId,
       ownerId: req.userId,
@@ -90,8 +104,21 @@ export const updatePoint = async (req, res) => {
       return res.status(403).send("Unauthorized");
     }
 
-    Object.assign(point, req.body);
+    // Update allowed fields
+    const allowedFields = [
+      'category', 'x', 'y', 'pX', 'pY',
+      'name', 'description', 'color', 'icon', 'size'
+    ];
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        point[field] = req.body[field];
+      }
+    });
+
     await point.save();
+
+    console.log("✅ Point updated:", point);
 
     res.json(point);
   } catch (err) {
@@ -105,12 +132,17 @@ export const updatePoint = async (req, res) => {
 ========================= */
 export const deletePoint = async (req, res) => {
   try {
+    console.log("🗑️ Delete point request:");
+    console.log("Point ID:", req.params.id);
+    console.log("User ID:", req.userId);
+
     const point = await Point.findById(req.params.id);
 
     if (!point) {
       return res.status(404).send("Point not found");
     }
 
+    // Verify map ownership
     const map = await Map.findOne({
       _id: point.mapId,
       ownerId: req.userId,
@@ -121,6 +153,9 @@ export const deletePoint = async (req, res) => {
     }
 
     await point.deleteOne();
+
+    console.log("✅ Point deleted");
+
     res.sendStatus(204);
   } catch (err) {
     console.error("deletePoint error:", err);

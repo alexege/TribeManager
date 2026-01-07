@@ -247,56 +247,173 @@ export const useMapStore = defineStore("map", {
       });
     },
 
-    async createPoint(mapId, point) {
-      const res = await fetch(`/api/points/map/${mapId}`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
-        body: JSON.stringify(point),
-      });
+    // Add these methods to your map.store.js
 
-      if (!res.ok) {
-        throw new Error("Failed to create point");
-      }
+async createPoint(mapId, pointData) {
+  try {
+    const payload = {
+      category: pointData.category || pointData.icon || 'default',
+      x: pointData.x,
+      y: pointData.y,
+      pX: pointData.pX,
+      pY: pointData.pY,
+      name: pointData.name || '',
+      description: pointData.description || '',
+      color: pointData.color || '#ff0000',
+      icon: pointData.icon || pointData.category || 'location_on',
+      size: pointData.size || 10
+    };
 
-      const created = await res.json();
+    console.log('Creating point with payload:', payload);
 
-      this.pointsById[created._id] = created;
-      this.pointIdsByMap[mapId].push(created._id);
-    },
+    const response = await fetch(`/api/points/map/${mapId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include', // Include cookies if you're using cookie-based auth
+      body: JSON.stringify(payload)
+    });
 
-    async updatePoint(pointId, updates) {
-      const res = await fetch(`/api/points/${pointId}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        credentials: "include",
-        body: JSON.stringify(updates),
-      });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error);
+    }
 
-      if (!res.ok) {
-        throw new Error("Failed to update point");
-      }
+    const newPoint = await response.json();
+    console.log('Point created:', newPoint);
 
-      const updated = await res.json();
-      this.pointsById[pointId] = updated;
-    },
+    // Add to store
+    if (!this.pointIdsByMap[mapId]) {
+      this.pointIdsByMap[mapId] = [];
+    }
+    this.pointIdsByMap[mapId].push(newPoint._id);
+    this.pointsById[newPoint._id] = {
+      id: newPoint._id,
+      ...newPoint
+    };
 
-    async deletePoint(mapId, pointId) {
-      const res = await fetch(`/api/points/${pointId}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
+    return newPoint;
+  } catch (err) {
+    console.error('Failed to create point:', err);
+    throw err;
+  }
+},
 
-      if (!res.ok) {
-        throw new Error("Failed to delete point");
-      }
+// UPDATE POINT
+async updatePoint(pointId, updates) {
+  try {
+    const payload = {};
 
-      delete this.pointsById[pointId];
+    // Only send fields that are being updated
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.x !== undefined) payload.x = updates.x;
+    if (updates.y !== undefined) payload.y = updates.y;
+    if (updates.pX !== undefined) payload.pX = updates.pX;
+    if (updates.pY !== undefined) payload.pY = updates.pY;
+    if (updates.color !== undefined) payload.color = updates.color;
+    if (updates.icon !== undefined) payload.icon = updates.icon;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.size !== undefined) payload.size = updates.size;
+
+    console.log('Updating point with payload:', payload);
+
+    const response = await fetch(`/api/points/${pointId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error);
+    }
+
+    const updatedPoint = await response.json();
+    console.log('Point updated:', updatedPoint);
+
+    // Update in store
+    if (this.pointsById[pointId]) {
+      this.pointsById[pointId] = {
+        id: updatedPoint._id,
+        ...updatedPoint
+      };
+    }
+
+    return updatedPoint;
+  } catch (err) {
+    console.error('Failed to update point:', err);
+    throw err;
+  }
+},
+
+// DELETE POINT
+async deletePoint(mapId, pointId) {
+  try {
+    console.log('Deleting point:', pointId);
+    console.log('from map:', mapId);
+
+    const response = await fetch(`/api/points/${pointId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error);
+    }
+
+    console.log('Point deleted successfully');
+
+    // Remove from store
+    if (this.pointIdsByMap[mapId]) {
       this.pointIdsByMap[mapId] = this.pointIdsByMap[mapId].filter(
-        (id) => id !== pointId
+        id => id !== pointId
       );
-    },
+    }
+    delete this.pointsById[pointId];
+
+    return true;
+  } catch (err) {
+    console.error('Failed to delete point:', err);
+    throw err;
+  }
+},
+
+// FETCH POINTS
+async fetchPoints(mapId) {
+  try {
+    console.log('Fetching points for map:', mapId);
+
+    const response = await fetch(`/api/points/map/${mapId}`, {
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error);
+    }
+
+    const points = await response.json();
+    console.log('Points fetched:', points);
+
+    // Store points
+    this.pointIdsByMap[mapId] = points.map(p => p._id);
+    points.forEach(point => {
+      this.pointsById[point._id] = {
+        id: point._id,
+        ...point
+      };
+    });
+
+    return points;
+  } catch (err) {
+    console.error('Failed to fetch points:', err);
+    throw err;
+  }
+},
 
     async addTheIslandMap() {
     // Prevent duplicates (optional but recommended)

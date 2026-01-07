@@ -45,6 +45,7 @@ const addPoint = (mapId) => {
     mapStore.createPoint(mapId, { title, x, y, category })
 }
 const deletePoint = (mapId, pointId) => {
+    console.log("deleting point from mapsView")
     if (!confirm('Delete this point?')) return
     mapStore.deletePoint(mapId, pointId)
 }

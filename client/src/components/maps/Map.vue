@@ -236,8 +236,8 @@ const editPoint = (point) => {
     showEditModal.value = true
 }
 const deletePointHandler = (pointData) => {
-    deletePoint(props.map.id, pointData.id)
-    if (selectedPoint.value?.id === pointData.id) selectedPoint.value = null
+    deletePoint(props.map.id, pointData._id)
+    if (selectedPoint.value?.id === pointData._id) selectedPoint.value = null
 }
 const zoomToPoint = (point) => {
     if (!mapRef.value) return
@@ -298,7 +298,22 @@ const categoriesWithPoints = computed(() => {
 })
 
 const activeMapPoints = computed(() => {
-  return activeMap.value?.points ?? []
+
+    console.log('Active Map ID:', activeMapId.value)
+  console.log('Points by Map:', mapStore.pointIdsByMap)
+  console.log('Points by ID:', mapStore.pointsById)
+
+  if (!activeMapId.value || !mapStore.pointIdsByMap[activeMapId.value]) {
+    return []
+  }
+
+  const pointIds = mapStore.pointIdsByMap[activeMapId.value]
+  const points = pointIds.map(id => mapStore.pointsById[id]).filter(Boolean)
+
+  console.log('Active map points:', points)
+  return points
+
+    //   return activeMap.value?.points ?? []
 })
 
 const confirmDeleteMap = (mapId) => {
@@ -348,7 +363,7 @@ const confirmDeleteMap = (mapId) => {
                         <div class="image-container"
                             :style="{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`, transition: transitionStyle }">
                             <div class="points">
-                                <Point v-for="p in visiblePoints" :key="p.id" :point="p"
+                                <Point v-for="p in visiblePoints" :key="p._id" :point="p"
                                     :hoverPoint="hoverPoint?.name" @click="selectPoint($event, p)"
                                     @dblclick="editPoint(p)"
                                     :style="{ left: p.x + 'px', top: p.y + 'px', position: 'absolute', zIndex: 100 }" />
@@ -415,7 +430,7 @@ const confirmDeleteMap = (mapId) => {
                                 </div>
                                 <transition name="collapse">
                                     <div v-if="!collapsedCategories[category.name]" class="category-content">
-                                        <template v-for="p in activeMapPoints" :key="p.id">
+                                        <template v-for="p in activeMapPoints" :key="p._id">
                                             <div v-if="p.icon === category.name && categoryVisibility[category.name]" class="point-display"
                                                 @mouseover="onMouseOver(p)" @mouseleave="onMouseHoverLeave"
                                                 @click.prevent="zoomToPoint(p)" @dblclick="activeTabIndex.value = 1;">

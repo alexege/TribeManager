@@ -63,7 +63,13 @@ export const useTimerStore = defineStore('timer', {
 
         firstEmptyZone() {
             return this.dropzones.find(zone => !zone.occupied)
-        }
+        },
+
+        getTimerById: (state) => (widgetId) => {
+            const widget = state.widgets.find(w => w.id === widgetId)
+            return widget?.timer || null
+        },
+
     },
 
     actions: {
@@ -74,6 +80,7 @@ export const useTimerStore = defineStore('timer', {
                 name: 'Countdown Timer',
                 zoneId: null,
                 timer: {
+                    name: 'Countdown Timer',
                     id: nanoid(),
                     duration: 300000,
                     isActive: false,

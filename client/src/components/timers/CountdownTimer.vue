@@ -94,7 +94,7 @@ const startCountDown = () => {
 
             soundService.play()
 
-            triggerNotification(`${props.timer.name || 'Timer'} has completed!`, 'success', 3000, false  )
+            triggerNotification(`${timerFromStore.value?.name || 'Timer Name'} has completed!`, 'success', 3000, false  )
 
             return
         }
@@ -244,6 +244,14 @@ import notificationService from '@/utils/notificationService.js'
 const triggerNotification = (message, type, duration, persistent) => {
     notificationService.addNotification(message, type, duration, persistent)
 }
+
+const timerFromStore = computed(() =>
+  timerStore.getTimerById(props.widgetId)
+)
+
+const timerName = computed(() =>
+  timerFromStore.value?.name || 'Timer'
+)
 </script>
 
 <template>
@@ -301,7 +309,7 @@ const triggerNotification = (message, type, duration, persistent) => {
 
         <div class="time-up-overlay" v-if="timerComplete">
           <div class="timer-overlay">
-            <div>{{ props.timer.name || 'Timer' }}</div>
+            <div>{{ timerName.value || 'Timer Name' }}</div>
             <div>Time's Up!</div>
             <div class="timer-up-controls">
                 <i @click="onReset(); timerComplete = false" class='bx bx-reset'></i>
