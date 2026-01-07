@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store.js'
+import soundService from '@/utils/soundService.js'
 
 const props = defineProps(['timer', 'widgetId'])
 
@@ -83,11 +84,18 @@ const startCountDown = () => {
             timeRemaining.value = 0
             percentLeft.value = 0
             timerComplete.value = true
+
             clearInterval(countDownId.value)
+
             timerStore.updateTimer(props.widgetId, {
                 isActive: false,
                 duration: 0
             })
+
+            soundService.play()
+
+            triggerNotification(`${props.timer.name || 'Timer'} has completed!`, 'success', 3000, false  )
+
             return
         }
 
@@ -231,6 +239,11 @@ const backgroundStyle = computed(() => {
 
     return `rgb(${r}, ${g}, ${b})`
 })
+
+import notificationService from '@/utils/notificationService.js'
+const triggerNotification = (message, type, duration, persistent) => {
+    notificationService.addNotification(message, type, duration, persistent)
+}
 </script>
 
 <template>
