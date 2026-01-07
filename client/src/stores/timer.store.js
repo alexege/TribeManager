@@ -2,25 +2,50 @@
 import { defineStore } from 'pinia'
 import { nanoid } from 'nanoid'
 
+const STORAGE_KEY = 'timer-widgets-state'
+
+// Helper to load from localStorage
+function loadFromStorage() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        return stored ? JSON.parse(stored) : null
+    } catch (e) {
+        console.error('Failed to load timer state:', e)
+        return null
+    }
+}
+
+// Helper to save to localStorage
+function saveToStorage(state) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            widgets: state.widgets,
+            gridCols: state.gridCols,
+            gridRows: state.gridRows,
+            showGrid: state.showGrid
+        }))
+    } catch (e) {
+        console.error('Failed to save timer state:', e)
+    }
+}
+
 export const useTimerStore = defineStore('timer', {
-    state: () => ({
-        widgets: [],
+    state: () => {
+        // Try to restore from localStorage
+        const saved = loadFromStorage()
 
-        // Grid configuration
-        gridCols: 3,
-        gridRows: 6,
-
-        // UI toggles
-        showGrid: true,
-
-        // Drag state
-        isDragging: false,
-        draggedWidgetId: null,
-        hoveredZoneId: null,
-    }),
+        return {
+            widgets: saved?.widgets || [],
+            gridCols: saved?.gridCols || 3,
+            gridRows: saved?.gridRows || 3,
+            showGrid: saved?.showGrid ?? true,
+            isDragging: false,
+            draggedWidgetId: null,
+            hoveredZoneId: null,
+        }
+    },
 
     getters: {
-        // Generate dropzone grid IDs
         dropzones(state) {
             const zones = []
             for (let row = 0; row < state.gridRows; row++) {
@@ -51,7 +76,8 @@ export const useTimerStore = defineStore('timer', {
                 timer: {
                     id: nanoid(),
                     duration: 300000,
-                    isActive: false
+                    isActive: false,
+                    endDateTime: null
                 }
             }
 
@@ -60,6 +86,7 @@ export const useTimerStore = defineStore('timer', {
             }
 
             this.widgets.push(widget)
+            saveToStorage(this.$state)
         },
 
         addStopwatch() {
@@ -70,8 +97,10 @@ export const useTimerStore = defineStore('timer', {
                 zoneId: null,
                 timer: {
                     id: nanoid(),
-                    elapsed: 0,
-                    isActive: false
+                    isActive: false,
+                    timeBegan: null,
+                    timeStopped: null,
+                    stoppedDuration: 0
                 }
             }
 
@@ -80,10 +109,28 @@ export const useTimerStore = defineStore('timer', {
             }
 
             this.widgets.push(widget)
+            saveToStorage(this.$state)
         },
 
         removeWidget(id) {
             this.widgets = this.widgets.filter(w => w.id !== id)
+            saveToStorage(this.$state)
+        },
+
+        updateTimer(widgetId, timerUpdates) {
+            const widget = this.widgets.find(w => w.id === widgetId)
+            if (widget && widget.timer) {
+                Object.assign(widget.timer, timerUpdates)
+                saveToStorage(this.$state)
+            }
+        },
+
+        updateWidgetName(widgetId, newName) {
+            const widget = this.widgets.find(w => w.id === widgetId)
+            if (widget) {
+                widget.name = newName
+                saveToStorage(this.$state)
+            }
         },
 
         startDrag(widgetId) {
@@ -96,7 +143,6 @@ export const useTimerStore = defineStore('timer', {
         },
 
         endDrag() {
-            // If hovering over a zone, handle drop
             if (this.hoveredZoneId && this.draggedWidgetId) {
                 this.dropWidgetInZone(this.draggedWidgetId, this.hoveredZoneId)
             }
@@ -110,34 +156,21 @@ export const useTimerStore = defineStore('timer', {
             const draggedWidget = this.widgets.find(w => w.id === widgetId)
             if (!draggedWidget) return
 
-            // If dropping in same zone, do nothing
             if (draggedWidget.zoneId === targetZoneId) return
 
-            // Find widget currently in target zone
             const targetWidget = this.widgets.find(
                 w => w.zoneId === targetZoneId && w.id !== widgetId
             )
 
             if (targetWidget) {
-                // Swap zones with animation flag
                 const draggedZone = draggedWidget.zoneId
-
-                // Mark widgets as swapping for animation
-                draggedWidget.isSwapping = true
-                targetWidget.isSwapping = true
-
                 targetWidget.zoneId = draggedZone
                 draggedWidget.zoneId = targetZoneId
-
-                // Clear swap flag after animation
-                setTimeout(() => {
-                    draggedWidget.isSwapping = false
-                    targetWidget.isSwapping = false
-                }, 400)
             } else {
-                // Simply move to empty zone
                 draggedWidget.zoneId = targetZoneId
             }
+
+            saveToStorage(this.$state)
         },
 
         toggleTimerType(widgetId) {
@@ -148,26 +181,33 @@ export const useTimerStore = defineStore('timer', {
                 widget.type = 'stopwatch'
                 widget.timer = {
                     id: nanoid(),
-                    elapsed: 0,
-                    isActive: false
+                    isActive: false,
+                    timeBegan: null,
+                    timeStopped: null,
+                    stoppedDuration: 0
                 }
             } else {
                 widget.type = 'countdown'
                 widget.timer = {
                     id: nanoid(),
                     duration: 300000,
-                    isActive: false
+                    isActive: false,
+                    endDateTime: null
                 }
             }
+
+            saveToStorage(this.$state)
         },
 
         increaseRows() {
-            if (this.gridRows < 6) this.gridRows++
+            if (this.gridRows < 6) {
+                this.gridRows++
+                saveToStorage(this.$state)
+            }
         },
 
         decreaseRows() {
             if (this.gridRows > 1) {
-                // Check if reducing rows would orphan widgets
                 const maxRow = this.gridRows - 1
                 const hasWidgetsInLastRow = this.widgets.some(w => {
                     const match = w.zoneId?.match(/zone-(\d+)-(\d+)/)
@@ -176,17 +216,20 @@ export const useTimerStore = defineStore('timer', {
 
                 if (!hasWidgetsInLastRow) {
                     this.gridRows--
+                    saveToStorage(this.$state)
                 }
             }
         },
 
         increaseCols() {
-            if (this.gridCols < 8) this.gridCols++
+            if (this.gridCols < 8) {
+                this.gridCols++
+                saveToStorage(this.$state)
+            }
         },
 
         decreaseCols() {
             if (this.gridCols > 1) {
-                // Check if reducing cols would orphan widgets
                 const maxCol = this.gridCols - 1
                 const hasWidgetsInLastCol = this.widgets.some(w => {
                     const match = w.zoneId?.match(/zone-(\d+)-(\d+)/)
@@ -195,12 +238,14 @@ export const useTimerStore = defineStore('timer', {
 
                 if (!hasWidgetsInLastCol) {
                     this.gridCols--
+                    saveToStorage(this.$state)
                 }
             }
         },
 
         toggleGrid() {
             this.showGrid = !this.showGrid
+            saveToStorage(this.$state)
         }
     }
 })

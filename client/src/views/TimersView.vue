@@ -1,10 +1,50 @@
 <script setup>
+import { ref, nextTick, watch } from 'vue'
 import ToggleSwitch from '@/components/inputs/ToggleSwitch.vue'
 import TimerWidget from '@/components/widgets/TimerWidget.vue'
 import { useTimerStore } from '@/stores/timer.store'
 
 const store = useTimerStore()
 
+/* ================================
+   FLIP: widget DOM registry
+================================ */
+const widgetEls = new Map()
+
+const registerWidgetEl = (id, el) => {
+  if (el) widgetEls.set(id, el.$el)
+}
+
+/* ================================
+   FLIP animation helper
+================================ */
+const animateWidgets = async (firstPositions) => {
+  await nextTick()
+
+  for (const [id, first] of firstPositions.entries()) {
+    const el = widgetEls.get(id)
+    if (!el) continue
+
+    const last = el.getBoundingClientRect()
+    const dx = first.left - last.left
+    const dy = first.top - last.top
+
+    if (dx || dy) {
+      el.style.transform = `translate(${dx}px, ${dy}px) scale(1.02)`
+      el.style.transition = 'none'
+
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 360ms cubic-bezier(.22,1,.36,1)' //No Spring
+        // el.style.transition = 'transform 420ms cubic-bezier(.34,1.56,.64,1)' //Spring Effect
+        el.style.transform = ''
+      })
+    }
+  }
+}
+
+/* ================================
+   Existing drag handlers
+================================ */
 const handleDragOver = (e, zoneId) => {
   e.preventDefault()
   store.setHoveredZone(zoneId)
@@ -14,10 +54,24 @@ const handleDragLeave = () => {
   store.setHoveredZone(null)
 }
 
-const handleDrop = (e, zoneId) => {
+const handleDrop = async (e) => {
   e.preventDefault()
+
+  // 1️⃣ Capture FIRST positions BEFORE mutation
+  const firstPositions = new Map()
+
+  store.widgets.forEach(w => {
+    const el = widgetEls.get(w.id)
+    if (el) firstPositions.set(w.id, el.getBoundingClientRect())
+  })
+
+  // 2️⃣ Mutate state (swap / move happens here)
   store.endDrag()
+
+  // 3️⃣ Animate to new positions
+  await animateWidgets(firstPositions)
 }
+
 </script>
 
 <template>
@@ -59,31 +113,22 @@ const handleDrop = (e, zoneId) => {
         class="dropzone"
         :class="{
           active: store.isDragging && store.hoveredZoneId === zone.id,
-          occupied: zone.occupied,
-          'swap-target': store.widgets.find(w => w.zoneId === zone.id && w.id === store.swapTargetWidgetId)
+          swap: zone.occupied && store.isDragging && store.hoveredZoneId === zone.id,
+          occupied: zone.occupied
         }"
         @dragover="handleDragOver($event, zone.id)"
         @dragleave="handleDragLeave"
-        @drop="handleDrop($event, zone.id)"
+        @drop="handleDrop"
       >
-        <div
-          v-if="store.isDragging && store.hoveredZoneId === zone.id && !zone.occupied"
-          class="drop-preview"
-        >
-          <div class="preview-icon">↓</div>
-          <div class="preview-text">Drop here</div>
-        </div>
-
-        <div
-          v-if="store.swapTargetWidgetId && store.widgets.find(w => w.zoneId === zone.id && w.id === store.swapTargetWidgetId)"
-          class="swap-indicator"
-        >
-          <div class="swap-icon">⇄</div>
-        </div>
-
         <TimerWidget
           v-if="store.widgets.find(w => w.zoneId === zone.id)"
           :widget="store.widgets.find(w => w.zoneId === zone.id)"
+          :ref="el =>
+            registerWidgetEl(
+              store.widgets.find(w => w.zoneId === zone.id)?.id,
+              el
+            )
+          "
         />
       </div>
     </div>
@@ -92,20 +137,21 @@ const handleDrop = (e, zoneId) => {
 
 <style scoped>
 .timers-view {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  /* width: 100%; */
+  margin: 0 auto;
+  height: 100%;
+  text-align: center;
+  /* height: 100vh; */
+  /* overflow: hidden; */
   background: linear-gradient(135deg, #14161f, #0b0c12);
   position: relative;
 }
 
 /* Toolbar */
 .toolbar {
-  position: absolute;
+  position: sticky;
   top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5em;
   padding: 0.5em 0.75em;
@@ -115,6 +161,7 @@ const handleDrop = (e, zoneId) => {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   z-index: 100;
 }
+
 
 .toolbar button {
   background: none;
@@ -168,25 +215,44 @@ const handleDrop = (e, zoneId) => {
 
 /* Grid Layout */
 .timer-grid {
-  min-width: 80vw;
-  height: 100%;
+  width: 100%;
+  /* min-width: 80vw; */
+  /* height: 100%; */
   display: grid;
-  grid-template-columns: repeat(var(--grid-cols), 1fr);
-  grid-template-rows: repeat(var(--grid-rows), 1fr);
-  gap: 16px;
+  /* grid-template-columns: repeat(var(--grid-cols), 1fr);
+  grid-template-rows: repeat(var(--grid-rows), 1fr); */
+  grid-template-columns: repeat(var(--grid-cols), minmax(100px, max-content));
+  grid-template-rows: repeat(var(--grid-rows), minmax(100px, max-content));
+  /* grid-auto-rows: max-content; */
+  justify-content: center;
+  align-content: start;
+  gap: .5em;
   padding: 80px 16px 16px 16px;
   box-sizing: border-box;
 }
 
 /* Dropzones */
 .dropzone {
+  min-width: 320px;
+  min-height: 200px;
+
+  height: 100%;
+  max-height: 200px;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+  display: flex;
+  position: relative;
+}
+
+/* .dropzone {
   position: relative;
   border: 2px dashed rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
   min-height: 160px;
-}
+} */
 
 .dropzone.active {
   border-color: rgba(0, 255, 120, 0.8);
@@ -200,19 +266,9 @@ const handleDrop = (e, zoneId) => {
   background: transparent;
 }
 
-.dropzone.swap-target {
-  border-color: rgba(255, 165, 0, 0.8) !important;
-  background: rgba(255, 165, 0, 0.1) !important;
-  animation: pulse-swap 0.6s ease-in-out infinite;
-}
-
-@keyframes pulse-swap {
-  0%, 100% {
-    box-shadow: inset 0 0 20px rgba(255, 165, 0, 0.3);
-  }
-  50% {
-    box-shadow: inset 0 0 30px rgba(255, 165, 0, 0.5);
-  }
+.dropzone.swap {
+  outline: 2px dashed #ffcc00;
+  background: rgba(255, 204, 0, 0.08);
 }
 
 /* Drop Preview */
@@ -274,7 +330,7 @@ const handleDrop = (e, zoneId) => {
   animation: fadeInScale 0.2s ease-out;
 }
 
-.swap-icon {
+/* .swap-icon {
   font-size: 64px;
   color: rgba(255, 165, 0, 0.9);
   text-shadow:
@@ -290,7 +346,7 @@ const handleDrop = (e, zoneId) => {
   50% {
     transform: rotate(180deg) scale(1.1);
   }
-}
+} */
 
 /* Grid overlay pattern */
 .timer-grid::before {
@@ -315,9 +371,6 @@ const handleDrop = (e, zoneId) => {
   background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.5));
   z-index: 0;
 }
-
-
-
 
 .grid--visible .dropzone {
   opacity: 1;

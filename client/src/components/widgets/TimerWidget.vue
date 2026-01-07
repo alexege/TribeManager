@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 import CountdownTimer from '@/components/timers/CountdownTimer.vue'
 import StopwatchTimer from '@/components/timers/StopwatchTimer.vue'
@@ -24,7 +24,6 @@ const handleDragStart = (e) => {
   e.dataTransfer.effectAllowed = 'move'
   e.dataTransfer.setData('text/plain', props.widget.id)
 
-  // Make dragged widget semi-transparent
   e.target.style.opacity = '0.5'
 }
 
@@ -34,15 +33,15 @@ const handleDragEnd = (e) => {
   store.endDrag()
 }
 
-// Check if widget is swapping
-const isSwapping = computed(() => props.widget.isSwapping)
+const handleNameUpdate = (e) => {
+  store.updateWidgetName(props.widget.id, e.target.value)
+}
 </script>
 
 <template>
   <div
     ref="widgetEl"
     class="timer-widget"
-    :class="{ swapping: isSwapping }"
     :draggable="isDraggable"
     @dragstart="handleDragStart"
     @dragend="handleDragEnd"
@@ -52,17 +51,6 @@ const isSwapping = computed(() => props.widget.isSwapping)
       class="control-bar"
       @mousedown="handleControlBarMouseDown"
     >
-      <div class="drag-handle">
-        ⣿
-      </div>
-
-      <input
-        v-model="widget.name"
-        class="timer-name"
-        placeholder="Timer name..."
-        @click.stop
-        @mousedown.stop
-      />
 
       <button
         class="toggle-button"
@@ -73,6 +61,19 @@ const isSwapping = computed(() => props.widget.isSwapping)
       >
         {{ widget.type === 'countdown' ? '⏱' : '⏳' }}
       </button>
+
+      <input
+        :value="widget.name"
+        @input="handleNameUpdate"
+        class="timer-name"
+        placeholder="Timer name..."
+        @click.stop
+        @mousedown.stop
+      />
+
+      <div class="drag-handle">
+        ⣿
+      </div>
 
       <button
         class="delete-button"
@@ -88,6 +89,7 @@ const isSwapping = computed(() => props.widget.isSwapping)
     <component
       :is="widget.type === 'countdown' ? CountdownTimer : StopwatchTimer"
       :timer="widget.timer"
+      :widgetId="widget.id"
     />
   </div>
 </template>
@@ -95,7 +97,6 @@ const isSwapping = computed(() => props.widget.isSwapping)
 <style scoped>
 .timer-widget {
   width: 100%;
-  /* height: 100%; */
   border-radius: 12px;
   background: linear-gradient(145deg, #0e0e0e, #000);
   box-shadow:
@@ -109,14 +110,22 @@ const isSwapping = computed(() => props.widget.isSwapping)
   flex-direction: column;
   position: relative;
   z-index: 1;
+  will-change: transform;
+  aspect-ratio: 16 / 9;
+  max-width: 320px;
 }
 
 .timer-widget[draggable="true"] {
   cursor: grab;
+  transform: scale(1.02);
 }
 
 .timer-widget[draggable="true"]:active {
   cursor: grabbing;
+}
+
+.timer-widget[draggable="true"]:hover {
+  transform: none;
 }
 
 .timer-widget:hover {
@@ -124,45 +133,6 @@ const isSwapping = computed(() => props.widget.isSwapping)
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,.1),
     0 16px 40px rgba(0,0,0,.9);
-}
-
-/* Swapping animation */
-.timer-widget.swapping {
-  animation: swapPulse 0.4s ease-in-out;
-  z-index: 50;
-}
-
-@keyframes swapPulse {
-  0% {
-    transform: scale(1) rotate(0deg);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 165, 0, 0),
-      0 12px 32px rgba(0,0,0,.7);
-  }
-  25% {
-    transform: scale(1.05) rotate(2deg);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 165, 0, 0.8),
-      0 20px 50px rgba(255, 165, 0, 0.4);
-  }
-  50% {
-    transform: scale(0.95) rotate(-2deg);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 165, 0, 1),
-      0 20px 50px rgba(255, 165, 0, 0.6);
-  }
-  75% {
-    transform: scale(1.02) rotate(1deg);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 165, 0, 0.5),
-      0 16px 40px rgba(255, 165, 0, 0.3);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 165, 0, 0),
-      0 12px 32px rgba(0,0,0,.7);
-  }
 }
 
 .control-bar {

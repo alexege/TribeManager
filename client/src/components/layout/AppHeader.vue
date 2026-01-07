@@ -102,7 +102,7 @@ h1 {
     gap: 0.4rem;
     padding: 0.3rem 0.6rem;
     border-radius: 999px;
-    background: hsl(210, 70%, 90%);
+    background: hsl(210, 70%, 50%);
 }
 
 .avatar {

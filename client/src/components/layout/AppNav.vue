@@ -25,9 +25,9 @@ const isAuthed = computed(() => auth.isAuthenticated)
 
             <span class="spacer" />
 
-            <button class="nav-item ghost" @click="auth.logout">
+            <!-- <button class="nav-item ghost" @click="auth.logout">
                 Logout
-            </button>
+            </button> -->
         </template>
     </nav>
 </template>

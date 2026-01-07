@@ -1,104 +1,141 @@
 <script setup>
-import { ref } from 'vue'
-import { useTimerStore } from '../../stores/timer.store';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useTimerStore } from '@/stores/timer.store'
 
-var time = ref('00:00:00:00')
-var timeBegan = ref(null)
-var timeStopped = ref(null)
-var stoppedDuration = ref(0)
-var started = ref(null)
-var running = ref(false)
-const props = defineProps(['timer'])
-const emit = defineEmits(['close'])
+const props = defineProps(['timer', 'widgetId'])
+const timerStore = useTimerStore()
+
+const time = ref('00:00:00:00')
+const intervalId = ref(null)
+
+onMounted(() => {
+    // Initialize display from stored state
+    updateDisplay()
+
+    // If timer was running, restart the interval
+    if (props.timer.isActive) {
+        startInterval()
+    }
+})
+
+onUnmounted(() => {
+    // Clean up interval but DON'T stop the timer
+    if (intervalId.value) {
+        clearInterval(intervalId.value)
+    }
+})
+
+// Watch for changes to the timer (in case it's controlled externally)
+watch(() => props.timer, () => {
+    updateDisplay()
+
+    // Start/stop interval based on isActive state
+    if (props.timer.isActive && !intervalId.value) {
+        startInterval()
+    } else if (!props.timer.isActive && intervalId.value) {
+        clearInterval(intervalId.value)
+        intervalId.value = null
+    }
+}, { deep: true })
 
 function start() {
-    if (running.value) return;
-    if (timeBegan.value === null) {
-        reset();
-        timeBegan.value = new Date();
+    if (props.timer.isActive) return
+
+    // Initialize timing if first start
+    if (!props.timer.timeBegan) {
+        timerStore.updateTimer(props.widgetId, {
+            timeBegan: Date.now(),
+            stoppedDuration: 0,
+            isActive: true
+        })
+    } else {
+        // Resume from pause
+        const pauseDuration = Date.now() - (props.timer.timeStopped || Date.now())
+        timerStore.updateTimer(props.widgetId, {
+            stoppedDuration: (props.timer.stoppedDuration || 0) + pauseDuration,
+            isActive: true,
+            timeStopped: null
+        })
     }
-    if (timeStopped.value !== null) {
-        stoppedDuration.value += (new Date() - timeStopped.value);
-    }
-    started.value = setInterval(clockRunning, 10);
-    running.value = true;
+
+    startInterval()
+}
+
+function startInterval() {
+    intervalId.value = setInterval(() => {
+        updateDisplay()
+    }, 10)
 }
 
 function stop() {
-    running.value = false;
-    timeStopped.value = new Date();
-    clearInterval(started.value);
+    if (!props.timer.isActive) return
+
+    timerStore.updateTimer(props.widgetId, {
+        isActive: false,
+        timeStopped: Date.now()
+    })
+
+    if (intervalId.value) {
+        clearInterval(intervalId.value)
+        intervalId.value = null
+    }
 }
 
 function reset() {
-    running.value = false;
-    clearInterval(started.value);
-    stoppedDuration.value = 0;
-    timeBegan.value = null;
-    timeStopped.value = null;
-    time.value = "00:00:00:00";
+    if (intervalId.value) {
+        clearInterval(intervalId.value)
+        intervalId.value = null
+    }
+
+    timerStore.updateTimer(props.widgetId, {
+        isActive: false,
+        timeBegan: null,
+        timeStopped: null,
+        stoppedDuration: 0
+    })
+
+    time.value = "00:00:00:00"
 }
 
-function clockRunning() {
-    var currentTime = new Date()
-    var timeElapsed = new Date(currentTime - timeBegan.value - stoppedDuration.value)
-    var hour = timeElapsed.getUTCHours()
-    var min = timeElapsed.getUTCMinutes()
-    var sec = timeElapsed.getUTCSeconds()
-    var ms = timeElapsed.getUTCMilliseconds()
-    time.value = zeroPrefix(hour, 2) + ":" +
-        zeroPrefix(min, 2) + ":" +
-        zeroPrefix(sec, 2) + ":" +
-        zeroPrefix(ms, 2);
+function updateDisplay() {
+    if (!props.timer.timeBegan) {
+        time.value = "00:00:00:00"
+        return
+    }
+
+    const currentTime = Date.now()
+    const elapsed = currentTime - props.timer.timeBegan - (props.timer.stoppedDuration || 0)
+
+    const ms = Math.floor((elapsed % 1000) / 10)
+    const sec = Math.floor((elapsed / 1000) % 60)
+    const min = Math.floor((elapsed / (1000 * 60)) % 60)
+    const hour = Math.floor(elapsed / (1000 * 60 * 60))
+
+    time.value = `${zeroPrefix(hour, 2)}:${zeroPrefix(min, 2)}:${zeroPrefix(sec, 2)}:${zeroPrefix(ms, 2)}`
 }
 
 function zeroPrefix(num, digit) {
-    var zero = '';
-    for (var i = 0; i < digit; i++) {
-        zero += '0';
-    }
-    return (zero + num).slice(-digit);
+    return String(num).padStart(digit, '0')
 }
-
-function deleteTimer(timerId) {
-    emit('close', timerId)
-}
-
-const { updateTimer } = useTimerStore()
-const editTimerName = ref(false);
-const editTimer = {
-    name: props.timer.name
-}
-
-async function updateTimerName() {
-    var data = {
-        _id: props.timer._id,
-        name: editTimer.name
-    }
-    await updateTimer(data)
-    editTimerName.value = false;
-}
-
 </script>
 
 <template>
     <div class="stopwatch-timer">
         <div class="timer-middle">
-            <span class="time-elapsed"
-                :style="[{ borderBottom: `2px solid white` }]
-                ">{{
-                    time }}</span>
+            <div class="time-remaining" :style="{ borderBottom: '2px solid white' }">
+                <span class="time-elapsed">{{ time }}</span>
+            </div>
         </div>
         <div class="timer-bottom">
             <div class="btn-container">
-                <i v-if="!running" @click="start" class='bx bx-play-circle'></i>
+                <i v-if="!timer.isActive" @click="start" class='bx bx-play-circle'></i>
                 <i v-else @click="stop" class='bx bx-pause-circle'></i>
                 <i @click="reset" class='bx bx-reset'></i>
-
             </div>
         </div>
     </div>
 </template>
+
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
@@ -115,16 +152,9 @@ async function updateTimerName() {
     border-radius: 5px;
     font-family: 'Share Tech Mono', sans-serif;
     background-color: black;
-
     transition: box-shadow 0.5s, transform 0.5s;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.stopwatch-timer:hover {
-    transform: translateY(-5px);
-}
-
-/* Generic */
 .timer-top,
 .timer-middle,
 .timer-bottom {
@@ -132,22 +162,12 @@ async function updateTimerName() {
     width: 100%;
     align-items: center;
     justify-content: center;
-
     color: white;
 }
 
-/* Top  */
 .timer-top {
     padding: 10px 0;
 }
-
-/* .timer-top .close {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: 2.5px 2.5px;
-    cursor: pointer;
-} */
 
 .timer-top .controls {
     position: absolute;
@@ -157,28 +177,33 @@ async function updateTimerName() {
     cursor: pointer;
 }
 
-/* Middle */
 .timer-middle {
     flex-direction: column;
 }
 
 .timer-middle .time-elapsed {
+    display: flex;
+    align-items: center;
     font-size: 2em;
-    /* padding: 0 .5em; */
-    min-height: 60px;
+}
 
+.timer-middle .time-remaining {
+    min-height: 3.75em;
     display: flex;
     align-items: center;
 }
 
-/* Bottom */
 .timer-bottom {
     padding: 10px 0;
 }
 
 .timer-bottom .btn-container i {
     padding: .10em .25em;
-    /* font-size: 20px; */
     cursor: pointer;
+    margin: 0 10px;
+}
+
+.timer-bottom .btn-container i:hover {
+    color: white;
 }
 </style>
