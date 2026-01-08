@@ -85,15 +85,19 @@ const handleDrop = async (e) => {
       <div class="toolbar-divider"></div>
 
       <div class="toolbar-section grid-controls">
-        <span class="label">Rows:</span>
-        <button @click="store.decreaseRows" :disabled="store.gridRows <= 1">−</button>
-        <span class="count">{{ store.gridRows }}</span>
-        <button @click="store.increaseRows" :disabled="store.gridRows >= 6">+</button>
+        <Transition name="collapse">
+          <span v-if="store.showGrid">
+            <span class="label">Rows:</span>
+            <button @click="store.decreaseRows" :disabled="store.gridRows <= 1">−</button>
+            <span class="count">{{ store.gridRows }}</span>
+            <button @click="store.increaseRows" :disabled="store.gridRows >= 6">+</button>
 
-        <span class="label">Cols:</span>
-        <button @click="store.decreaseCols" :disabled="store.gridCols <= 1">−</button>
-        <span class="count">{{ store.gridCols }}</span>
-        <button @click="store.increaseCols" :disabled="store.gridCols >= 8">+</button>
+            <span class="label">Cols:</span>
+            <button @click="store.decreaseCols" :disabled="store.gridCols <= 1">−</button>
+            <span class="count">{{ store.gridCols }}</span>
+            <button @click="store.increaseCols" :disabled="store.gridCols >= 8">+</button>
+          </span>
+        </Transition>
 
         <ToggleSwitch v-model="store.showGrid"/>
       </div>
@@ -384,4 +388,41 @@ const handleDrop = async (e) => {
 .grid--visible .dropzone:not(.occupied) {
     opacity: 0;
 }
+
+/* =========================
+   Collapse transition
+========================= */
+
+.collapse-enter-active,
+.collapse-leave-active {
+  transition:
+    max-width 240ms cubic-bezier(.22,1,.36,1),
+    opacity 160ms ease,
+    transform 240ms cubic-bezier(.22,1,.36,1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.collapse-enter-from,
+.collapse-leave-to {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-6px) scale(0.95);
+}
+
+.collapse-enter-to,
+.collapse-leave-from {
+  max-width: 400px; /* safely larger than content */
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.collapse-enter-active {
+  transition-delay: 40ms;
+}
+
+.collapse-leave-active {
+  transition-delay: 180ms;
+}
+
 </style>

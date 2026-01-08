@@ -441,7 +441,7 @@ const confirmDeleteMap = (mapId) => {
                 @keydown.enter="emit('add-map-instance')"
                 @input="emit('update:newMapTitle', $event.target.value)"
               />
-              <button @click="emit('add-map-instance')">Add Map</button>
+              <button @click="emit('add-map-instance')" class="add-map-btn">Add Map</button>
             </div>
 
             <!-- Map List -->
@@ -609,6 +609,10 @@ const confirmDeleteMap = (mapId) => {
   outline: .5px solid var(--orange);
 }
 
+.category-wrapper:hover {
+  background: var(--secondary-bg-color);
+}
+
 .category-controls {
   display: flex;
   flex-direction: row;
@@ -748,7 +752,7 @@ const confirmDeleteMap = (mapId) => {
 }
 
 .map-list {
-  max-height: 100%;
+  max-height: calc(100% - 50px);
   flex: 1;
   min-height: 0;
 }
@@ -784,6 +788,10 @@ const confirmDeleteMap = (mapId) => {
   flex-direction: column;
   font-size: 0.75em;
   gap: .25em;
+  padding-top: 1px;
+  padding-left: 1px;
+  padding-right: 1px;
+  gap: 8px;
 }
 
 .image-container {
@@ -874,7 +882,31 @@ const confirmDeleteMap = (mapId) => {
   background: var(--alternate-bg-color);
   backdrop-filter: blur(1px);
   /* outline: 1px solid var(--primary-color); */
-  box-shadow: 2px 2px 2px var(--primary-color);
+  border: 1px solid var(--border-subtle)
+}
+
+.tabs-container .tab-panel input[type="text"]{
+  color: var(--text-primary);
+  background: var(--glitch-grey);
+  border: 1px solid var(--primary-color);
+}
+
+.tabs-container .tab-panel input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.add-map-btn {
+    padding: .35em .5em;
+    color: var(--text-primary);
+    background: var(--alternate-color);
+    border: 1px solid var(--primary-color);
+    cursor: pointer;
+}
+
+.add-map-btn:hover {
+    background: var(--primary-color);
+    color: var(--void-black);
+    border: 1px solid transparent;
 }
 
 /* Target the scrollable element */
