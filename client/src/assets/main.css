@@ -16,13 +16,14 @@
 
     --text-primary: #ffffff;
     --text-muted: #9ca3af;
+
     --border-subtle: #2a2a2a;
+    --glass-dark: #0a0a0acc;
 
     --void-black: #050505;
     --terminal-white: #e0e0e0;
     --system-orange: #ff4500;
     --glitchy-grey: #333;
-    --glass-dark: #0a0a0acc;
 }
 
 

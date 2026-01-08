@@ -58,6 +58,39 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+.app-container::before {
+  content: '';
+  position: absolute;
+  inset: 80px 16px 16px 16px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+/* Vignette */
+.app-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.5));
+  z-index: 0;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px var(--bg-input) inset !important;
+}
+input:-webkit-autofill{
+    -webkit-text-fill-color: var(--text-primary) !important;
+}
+
 nav {
   display: flex;
   gap: 1rem;

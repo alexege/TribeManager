@@ -259,288 +259,274 @@ async function submit() {
     </div>
 </template>
 <style scoped>
+/* =========================
+   Layout
+========================= */
 .auth-wrapper {
-    flex: 1;
-    margin-top: 10vh;
-    /* background: radial-gradient(circle at top, #1e1e2f, #0f0f18); */
-    font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  margin-top: 10vh;
+  font-family: system-ui, sans-serif;
+  background: var(--bg-main);
 }
+
+/* =========================
+   Card
+========================= */
+/* .auth-card {
+  min-width: 360px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+} */
 
 .auth-card {
-    min-width: 360px;
-    background: #111827;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  min-width: 360px;
+  padding: 2rem;
+  border-radius: 16px;
+
+  /* Glass base */
+  background: rgba(18, 18, 18, 0.75);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+
+  /* Edge + depth */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* Tabs */
+.auth-card:focus-within {
+  border-color: rgba(255, 69, 15, 0.4);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 69, 15, 0.25),
+    0 0 24px rgba(255, 69, 15, 0.15);
+}
+
 .auth-tabs {
-    position: relative;
-    display: flex;
-    background: #0b1220;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    overflow: hidden;
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+
+/* =========================
+   Tabs
+========================= */
+.auth-tabs {
+  position: relative;
+  display: flex;
+  background: var(--alternate-bg-color);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  overflow: hidden;
 }
 
 .tab {
-    flex: 1;
-    padding: 0.75rem;
-    background: none;
-    border: none;
-    color: #9ca3af;
-    font-weight: 600;
-    cursor: pointer;
-    z-index: 1;
+  flex: 1;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 1;
 }
 
 .tab.active {
-    color: #fff;
+  color: var(--text-primary);
 }
 
 .tab-indicator {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border-radius: 12px;
-    transition: transform 0.3s ease, background 0.3s ease;
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--orange),
+    var(--orange-muted)
+  );
+  border-radius: 12px;
+  transition: transform 0.3s ease;
 }
 
 .tab-indicator.register {
-    transform: translateX(100%);
+  transform: translateX(100%);
 }
 
-/* Form */
+/* =========================
+   Form
+========================= */
 .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .title {
-    color: #fff;
-    text-align: center;
-    margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  text-align: center;
 }
 
-/* Floating inputs */
+/* =========================
+   Fields / Inputs
+========================= */
 .field {
-    position: relative;
+  position: relative;
 }
 
-/* Input */
 .field input {
-    width: 100%;
-    padding: 1rem 0.9rem;
-    background: #020617;
-    border: 1px solid #1f2937;
-    border-radius: 12px;
-    box-sizing: border-box;
-    color: #fff;
-    font-size: 0.95rem;
-    outline: none;
-    transition: border-color 0.2s ease;
+  width: 100%;
+  padding: 1rem 0.9rem;
+  padding-left: 2.5rem;
+  padding-right: 3rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field input::placeholder {
+  color: var(--text-muted);
 }
 
 .field input:focus {
-    border-color: #8b5cf6;
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px var(--orange-muted);
 }
 
-/* Placeholder styling */
-.field input::placeholder {
-    color: #6b7280;
-    transition: opacity 0.2s ease;
-}
-
-/* Fade placeholder when focused */
 .field input:focus::placeholder {
-    opacity: 0;
+  opacity: 0;
 }
 
-/* Label (starts hidden, sitting over placeholder) */
+/* =========================
+   Floating Labels
+========================= */
 .field label {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.85rem;
-    color: #9ca3af;
-    pointer-events: none;
-    padding: 0 6px;
-    background: #020617;
-    opacity: 0;
-    transition: all 0.25s ease;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  padding: 0 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
 }
 
-/* Show + float label on focus */
-.field input:focus+label {
-    top: -7px;
-    font-size: 0.7rem;
-    opacity: 1;
-    color: #8b5cf6;
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label {
+  top: -7px;
+  opacity: 1;
+  color: var(--orange);
 }
 
-/* Keep label floated when input has value */
-.field input:not(:placeholder-shown)+label {
-    top: -7px;
-    font-size: 0.7rem;
-    opacity: 1;
-    color: #a78bfa;
-}
-
-/* Empty + blurred → hide label again */
-.field input:placeholder-shown:not(:focus)+label {
-    opacity: 0;
-}
-
-/* Wrap input and button together */
+/* =========================
+   Input Wrapper / Icons
+========================= */
 .input-wrapper {
-    position: relative;
-    width: 100%;
+  position: relative;
 }
 
-/* Make input leave space for the toggle button */
-.input-wrapper input {
-    width: 100%;
-    padding-right: 3rem;
-    /* space for button */
-    box-sizing: border-box;
+.input-wrapper .icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
-/* Toggle button */
+.input-wrapper .icon svg {
+  fill: var(--text-muted);
+}
+
+/* =========================
+   Toggle Password
+========================= */
 .toggle-password {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #a78bfa;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    z-index: 2;
-    /* keep above input */
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--orange-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-/* Button */
+.toggle-password:hover {
+  color: var(--orange);
+}
+
+/* =========================
+   Submit Button
+========================= */
 .submit-btn {
-    margin-top: 1rem;
-    padding: 0.9rem;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.submit-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-}
-
-.submit-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-/* Field Errors */
-/* Animate error messages */
-.error-message {
-    margin-top: 6px;
-    font-size: 0.75rem;
-    color: #ef4444;
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: opacity 0.3s ease, max-height 0.3s ease;
-}
-
-.field.error .error-message {
-    opacity: 1;
-    max-height: 50px;
-    /* enough for one line of text */
-}
-
-/* Submit button hover and press animation */
-.submit-btn {
-    margin-top: 1rem;
-    padding: 0.9rem;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--orange),
+    var(--orange-muted)
+  );
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .submit-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-    background: linear-gradient(135deg, #7c3aed, #a78bfa);
-}
-
-.submit-btn:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(255, 69, 15, 0.35);
 }
 
 .submit-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* Add toggle password button styling */
-.toggle-password {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #a78bfa;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
+/* =========================
+   Errors
+========================= */
+.error-message {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--orange-soft);
 }
 
-/* Icons inside inputs */
-.input-wrapper .icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-/* Add padding so text doesn’t overlap icons */
-.input-wrapper input {
-    padding-left: 2.5rem;
-    /* space for icon */
-}
-
-/* Forgot password link */
+/* =========================
+   Forgot Password
+========================= */
 .forgot-password {
-    text-align: center;
-    margin-top: -0.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
 }
 
 .forgot-password a {
-    color: #8b5cf6;
-    text-decoration: none;
-    font-weight: 600;
+  color: var(--orange-soft);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .forgot-password a:hover {
-    text-decoration: underline;
+  color: var(--orange);
+  text-decoration: underline;
 }
+
+
 </style>
