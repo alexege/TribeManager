@@ -78,7 +78,7 @@ const filteredMapIds = computed(() =>
   mapStore.mapIds.filter(id => {
     const map = mapStore.mapsById[id]
     return map?.baseMapName === props.activeBaseMap
-  })
+  }).reverse()
 )
 
 const activeMapPoints = computed(() => {
@@ -352,7 +352,7 @@ const confirmDeleteMap = (mapId) => {
           @save="(val) => mapStore.updateMapName(activeMap.id, val)"
         >
           <template #display>
-            <h2>{{ activeMap.title }}</h2>
+            <h3>{{ activeMap.title }}</h3>
           </template>
         </InlineEdit>
         <span>({{ activeMap.baseMapName }})</span>
@@ -445,7 +445,7 @@ const confirmDeleteMap = (mapId) => {
             </div>
 
             <!-- Map List -->
-            <div class="map-list">
+            <div class="map-list scrollable">
               <div
                 v-for="id in filteredMapIds"
                 :key="id"
@@ -463,7 +463,6 @@ const confirmDeleteMap = (mapId) => {
                 >
                   {{ mapStore.mapsById[id].title }}
                 </InlineEdit>
-                {{ mapStore.mapsById[id].baseMapName }}
               </div>
             </div>
           </tab>
@@ -473,7 +472,7 @@ const confirmDeleteMap = (mapId) => {
               Double click anywhere on the map to create a point.
             </div>
 
-            <div class="points-container">
+            <div class="points-container scrollable">
               <template v-for="category in categoriesWithPoints" :key="category.name">
                 <div v-if="matchCount(category)" class="category-wrapper">
                   <div
@@ -668,10 +667,12 @@ const confirmDeleteMap = (mapId) => {
   justify-content: center;
   width: 100%;
   gap: .5em;
+  height: 50vw;
 }
 
 .map-main {
   padding: 2em;
+  padding-top: 0;
 }
 
 .map-container {
@@ -683,6 +684,26 @@ const confirmDeleteMap = (mapId) => {
   background-color: #141414;
   width: 100%;
   height: 100%;
+}
+
+.map-container::before {
+    content: '';
+    position: absolute;
+    inset: 20px 16px 16px 16px;
+    pointer-events: none;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.3;
+    z-index: 0;
+}
+
+.map-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at center, transparent 50%, rgba(0, 0, 0, 0.5));
+    z-index: 0;
 }
 
 .map {
@@ -697,7 +718,7 @@ const confirmDeleteMap = (mapId) => {
 
 .map-name {
   font-size: 1.5em;
-  padding: 1em;
+  /* padding: 1em; */
   text-align: center;
   display: flex;
   justify-content: center;
@@ -710,6 +731,11 @@ const confirmDeleteMap = (mapId) => {
   padding: 1em;
 }
 
+.map-name-wrapper h3 {
+  font-size: 1.5em;
+  margin: 0;
+}
+
 .map-name-wrapper span {
   font-size: .75rem;
 }
@@ -719,6 +745,12 @@ const confirmDeleteMap = (mapId) => {
   text-align: center;
   display: flex;
   justify-content: space-between;
+}
+
+.map-list {
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .map-list .active {
@@ -835,6 +867,36 @@ const confirmDeleteMap = (mapId) => {
 
 .tabs-container {
   width: 25vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--alternate-bg-color);
+  backdrop-filter: blur(1px);
+  /* outline: 1px solid var(--primary-color); */
+  box-shadow: 2px 2px 2px var(--primary-color);
+}
+
+/* Target the scrollable element */
+.scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) transparent;
+}
+
+.scrollable::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 4px;
 }
 
 .add-map {
@@ -868,6 +930,8 @@ const confirmDeleteMap = (mapId) => {
 }
 
 .category-header {
+  display: flex;
+  align-items: center;
   width: 100%;
   cursor: pointer;
 }
@@ -893,12 +957,16 @@ const confirmDeleteMap = (mapId) => {
 
 .placeholder-text {
   font-size: 1.5em;
-  padding: 1em;
+  /* padding: 1em; */
   text-align: center;
   font-style: italic;
 }
 
 .placeholder-subtext {
   font-size: .75rem;
+}
+
+.material-symbols-outlined {
+  font-size: 1em;
 }
 </style>

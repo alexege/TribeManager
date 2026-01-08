@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAuth } from "../middleware/auth.middleware.js";
+
 import {
   getPlayers,
   createPlayer,
@@ -9,7 +11,7 @@ import {
 
 const router = express.Router();
 
-// Add auth middleware later if you want
+router.use(requireAuth);
 router.get("/", getPlayers);
 router.post("/", createPlayer);
 router.put("/:id", updatePlayer);

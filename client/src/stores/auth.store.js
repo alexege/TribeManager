@@ -8,7 +8,7 @@ export const useAuthStore = defineStore("auth", () => {
   // ─────────────
   // STATE
   // ─────────────
-  const token = ref(localStorage.getItem("token"));
+  const token = ref(localStorage.getItem("token") || null);
   const user = ref(null);
   const loading = ref(false);
   const error = ref(null);

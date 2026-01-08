@@ -48,13 +48,6 @@ onMounted(async () => {
 
 <template>
   <div class="container">
-    <!-- Debug Info -->
-    <div class="debug-info">
-      <span>Active Base Map: {{ activeBaseMapName }}</span>
-      <span>Active Map ID: {{ activeMapId }}</span>
-      <span>Active Map Title: {{ activeMap?.title || 'None' }}</span>
-    </div>
-
     <h3 class="thumbnail-list-title">Maps</h3>
 
     <!-- Base Map Thumbnails -->
@@ -127,6 +120,8 @@ onMounted(async () => {
   overflow-x: auto;
   color: white;
   padding: 0.5em;
+  background: var(--glitch-grey);
+  gap: 0.25em;
 }
 
 .thumbnail {

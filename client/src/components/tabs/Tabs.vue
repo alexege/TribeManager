@@ -163,16 +163,32 @@ export default defineComponent({
                 );
             });
             return h(
-                "div",
-                {
-                    class: `tabs ${direction.value} ${reverse.value ? "reverse" : ""}`,
-                    role: "tabs",
-                },
-                [
-                    h("ul", { class: `tab-list ${position.value}`, role: "tabList" }, tabList),
-                    ...tabToDisplay.value,
-                ]
-            );
+  "div",
+  {
+    class: `tabs ${direction.value} ${reverse.value ? "reverse" : ""}`,
+    role: "tabs",
+  },
+  [
+    h("ul", { class: `tab-list ${position.value}`, role: "tabList" }, tabList),
+    h(
+      "div",
+      { class: "tabs-content" },
+      tabToDisplay.value
+    ),
+  ]
+);
+
+            // return h(
+            //     "div",
+            //     {
+            //         class: `tabs ${direction.value} ${reverse.value ? "reverse" : ""}`,
+            //         role: "tabs",
+            //     },
+            //     [
+            //         h("ul", { class: `tab-list ${position.value}`, role: "tabList" }, tabList),
+            //         ...tabToDisplay.value,
+            //     ]
+            // );
         };
     },
 });
@@ -184,18 +200,34 @@ export default defineComponent({
     --disabled-text-color: #999;
 }
 
+.tab {
+    height: 100%;
+    min-height: 0;
+}
+
 .tabs {
     /* display: grid; */
     /* grid-template-columns: 1fr; */
     /* display: flex; */
     /* min-width: 30%; */
-    width: 30%;
+    /* width: 30%; */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.tabs-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .tabs .tab-list {
     list-style: none;
     display: flex;
     padding-left: 0;
+    margin-bottom: 0;
     border-bottom: 1px solid var(--border-color);
 }
 
