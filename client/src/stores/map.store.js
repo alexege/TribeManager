@@ -14,7 +14,7 @@ export const useMapStore = defineStore("map", {
     /* UI state */
     activeMapId: null,
     activeMapTab: "all",
-    activeMapInstance: "The Island",
+    activeBaseMapName: "The Island",
 
     /* Static base maps (NOT persisted) */
     baseMaps: [
@@ -87,10 +87,13 @@ export const useMapStore = defineStore("map", {
         return acc;
       }, []);
     },
-  },
 
-  hasLoadedPoints: (state) => {
-    return (mapId) => Array.isArray(state.pointIdsByMap[mapId]);
+    // Get all map instances for the current base map
+    currentBaseMapInstances(state) {
+      return state.mapIds
+        .filter(id => state.mapsById[id]?.baseMapName === state.activeBaseMapName)
+        .map(id => state.mapsById[id]);
+    },
   },
 
   /* ----------------------------------
@@ -98,415 +101,341 @@ export const useMapStore = defineStore("map", {
   ---------------------------------- */
   actions: {
     /* ---------- UI ---------- */
-    setActiveMap(id) {
-      this.fetchPoints(this.activeMapId);
-      console.log("########## setting active map to########", id);
-      this.activeMapId = id;
+    setActiveBaseMap(baseMapName) {
+      this.activeBaseMapName = baseMapName;
+
+      // Find first instance of this base map
+      const firstInstance = this.mapIds.find(id =>
+        this.mapsById[id]?.baseMapName === baseMapName
+      );
+
+      if (firstInstance) {
+        this.setActiveMap(firstInstance);
+      }
+    },
+
+    async setActiveMap(mapId) {
+      console.log("Setting active map to:", mapId);
+      this.activeMapId = mapId;
       this.activeMapTab = "all";
+
+      // Load points if not already loaded (check if undefined, not just falsy)
+      if (this.pointIdsByMap[mapId] === undefined) {
+        console.log("📍 Points not loaded yet, fetching...");
+        await this.fetchPoints(mapId);
+      } else {
+        console.log("✅ Points already loaded:", this.pointIdsByMap[mapId].length);
+      }
     },
 
     setActiveMapTab(tabId) {
       this.activeMapTab = tabId;
     },
 
-    setActiveMapInstance(mapName) {
-      this.activeMapInstance = mapName;
+    /* ---------- INITIALIZATION ---------- */
+    async initialize() {
+      console.log("🚀 Initializing map store...");
+
+      // Fetch all maps
+      await this.fetchMaps();
+
+      // If no maps exist, create default Island map
+      if (this.mapIds.length === 0) {
+        console.log("No maps found, creating default Island map");
+        await this.createDefaultMap();
+      }
+
+      // Set active base map to first available or "The Island"
+      if (this.mapIds.length > 0) {
+        const firstMap = this.mapsById[this.mapIds[0]];
+        this.activeBaseMapName = firstMap.baseMapName;
+        // Use setActiveMap to properly load points
+        await this.setActiveMap(firstMap._id);
+      }
+
+      console.log("✅ Map store initialized");
+    },
+
+    async createDefaultMap() {
+      const baseMap = this.baseMaps.find(b => b.name === "The Island");
+      if (!baseMap) return;
+
+      const map = await this.createMapInstance({
+        baseMapName: "The Island",
+        title: "The Island Map"
+      });
+
+      return map;
     },
 
     /* ---------- MAPS ---------- */
-    ensureMapInstance(baseMapName) {
-      // Check if a map instance already exists for this base map
-      const existingId = this.mapIds.find((id) => {
-        return this.mapsById[id]?.baseMapName === baseMapName;
-      });
-
-      if (existingId) {
-        this.activeMapId = existingId;
-        this.activeMapTab = "all";
-        return;
-      }
-
-      // Otherwise create a default instance
-      const baseMap = this.baseMaps.find((b) => b.name === baseMapName);
-      if (!baseMap) return;
-
-      const id = Date.now();
-
-      this.mapsById[id] = {
-        id,
-        baseMapName,
-        title: `${baseMapName} Map`,
-        img: baseMap.img,
-      };
-
-      this.mapIds.push(id);
-      this.pointIdsByMap[id] = [];
-      this.activeMapId = id;
-      this.activeMapTab = "all";
-    },
-
     async fetchMaps() {
-      const res = await fetch("/api/maps", {
-        headers: getAuthHeaders(),
-        credentials: "include"
-      });
-      const maps = await res.json() || [];
+      try {
+        const res = await fetch("/api/maps", {
+          headers: getAuthHeaders(),
+          credentials: "include"
+        });
+        const maps = await res.json() || [];
 
-      this.mapsById = {};
-      this.mapIds = [];
+        this.mapsById = {};
+        this.mapIds = [];
 
-      maps.forEach((map) => {
-        this.mapsById[map._id] = map;
-        this.mapIds.push(map._id);
-        this.pointIdsByMap[map._id] = [];
-      });
+        maps.forEach((map) => {
+          this.mapsById[map._id] = map;
+          this.mapIds.push(map._id);
+          // Don't initialize pointIdsByMap here - let it be undefined
+          // so we know when to fetch points
+        });
 
-      if (!this.activeMapId && this.mapIds.length) {
-        this.setActiveMap(this.mapIds[0]);
+        console.log("Fetched maps:", maps.length);
+      } catch (err) {
+        console.error("Failed to fetch maps:", err);
       }
     },
 
     async createMapInstance({ baseMapName, title }) {
-  try {
-    // Find the base map to get the image
-    const baseMap = this.baseMaps.find(m => m.name === baseMapName)
-    if (!baseMap) {
-      throw new Error(`Base map "${baseMapName}" not found`)
-    }
+      try {
+        const baseMap = this.baseMaps.find(m => m.name === baseMapName);
+        if (!baseMap) {
+          throw new Error(`Base map "${baseMapName}" not found`);
+        }
 
-    const payload = {
-      baseMapName,
-      title,
-      img: baseMap.img
-    }
+        const payload = {
+          baseMapName,
+          title,
+          img: baseMap.img
+        };
 
-    console.log('Creating map with payload:', payload)
+        const response = await fetch('/api/maps', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
 
-    const response = await fetch('/api/maps', {
-      method: 'POST',
-      headers: getAuthHeaders(), // Make sure you have this helper
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    })
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error)
-    }
+        const newMap = await response.json();
 
-    const newMap = await response.json()
-    console.log('Map created:', newMap)
+        // Add to store
+        this.mapIds.push(newMap._id);
+        this.mapsById[newMap._id] = newMap;
+        this.pointIdsByMap[newMap._id] = [];
 
-    // Add to store
-    this.mapIds.push(newMap._id)
-    this.mapsById[newMap._id] = {
-      id: newMap._id,
-      ...newMap
-    }
-
-    // Initialize empty points array for this map
-    this.pointIdsByMap[newMap._id] = []
-
-    // Return the created map
-    return {
-      id: newMap._id,
-      ...newMap
-    }
-  } catch (err) {
-    console.error('Failed to create map:', err)
-    throw err
-  }
-},
-    async updateMapName(mapId, newTitle) {
-      const res = await fetch(`/api/maps/${mapId}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        credentials: "include",
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to update map name");
+        return newMap;
+      } catch (err) {
+        console.error('Failed to create map:', err);
+        throw err;
       }
+    },
 
-      const updated = await res.json();
-      this.mapsById[mapId] = updated;
+    async updateMapName(mapId, newTitle) {
+      try {
+        const res = await fetch(`/api/maps/${mapId}`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          credentials: "include",
+          body: JSON.stringify({ title: newTitle }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update map name");
+        }
+
+        const updated = await res.json();
+        this.mapsById[mapId] = updated;
+      } catch (err) {
+        console.error("Failed to update map name:", err);
+        throw err;
+      }
     },
 
     async deleteMapInstance(mapId) {
-      const res = await fetch(`/api/maps/${mapId}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
+      try {
+        const res = await fetch(`/api/maps/${mapId}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
 
-      if (!res.ok) {
-        throw new Error("Failed to delete map instance");
-      }
+        if (!res.ok) {
+          throw new Error("Failed to delete map instance");
+        }
 
-      (this.pointIdsByMap[mapId] || []).forEach(
-        (pid) => delete this.pointsById[pid]
-      );
+        // Clean up points
+        (this.pointIdsByMap[mapId] || []).forEach(
+          (pid) => delete this.pointsById[pid]
+        );
 
-      delete this.mapsById[mapId];
-      delete this.pointIdsByMap[mapId];
-      this.mapIds = this.mapIds.filter((id) => id !== mapId);
+        delete this.mapsById[mapId];
+        delete this.pointIdsByMap[mapId];
+        this.mapIds = this.mapIds.filter((id) => id !== mapId);
 
-      if (this.activeMapId === mapId) {
-        this.activeMapId = this.mapIds[0] || null;
+        // If deleted map was active, switch to another
+        if (this.activeMapId === mapId) {
+          if (this.mapIds.length > 0) {
+            await this.setActiveMap(this.mapIds[0]);
+          } else {
+            this.activeMapId = null;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to delete map:", err);
+        throw err;
       }
     },
 
     /* ---------- POINTS ---------- */
-    // async fetchPoints(mapId) {
-    //   const res = await fetch(`/api/points/map/${mapId}`, {
-    //     headers: getAuthHeaders(),
-    //     credentials: "include",
-    //   });
+    async fetchPoints(mapId) {
+      try {
+        console.log('📍 Fetching points for map:', mapId);
 
-    //   if (!res.ok) {
-    //     throw new Error("Failed to fetch points");
-    //   }
-    //   const points = await res.json();
+        const response = await fetch(`/api/points/map/${mapId}`, {
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
 
-    //   this.pointIdsByMap[mapId] = [];
-    //   points.forEach((p) => {
-    //     this.pointsById[p._id] = p;
-    //     this.pointIdsByMap[mapId].push(p._id);
-    //   });
-    // },
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
 
-    // Add these methods to your map.store.js
+        const points = await response.json();
+        console.log('📍 Points received:', points.length);
 
-async createPoint(mapId, pointData) {
-  try {
-    const payload = {
-      category: pointData.category || pointData.icon || 'default',
-      x: pointData.x,
-      y: pointData.y,
-      pX: pointData.pX,
-      pY: pointData.pY,
-      name: pointData.name || '',
-      description: pointData.description || '',
-      color: pointData.color || '#ff0000',
-      icon: pointData.icon || pointData.category || 'location_on',
-      size: pointData.size || 10
-    };
+        // Store points
+        this.pointIdsByMap[mapId] = points.map(p => p._id);
 
-    console.log('Creating point with payload:', payload);
+        points.forEach(point => {
+          this.pointsById[point._id] = {
+            id: point._id,
+            ...point
+          };
+        });
 
-    const response = await fetch(`/api/points/map/${mapId}`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include', // Include cookies if you're using cookie-based auth
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
-    }
-
-    const newPoint = await response.json();
-    console.log('Point created:', newPoint);
-
-    // Add to store
-    if (!this.pointIdsByMap[mapId]) {
-      this.pointIdsByMap[mapId] = [];
-    }
-    this.pointIdsByMap[mapId].push(newPoint._id);
-    this.pointsById[newPoint._id] = {
-      id: newPoint._id,
-      ...newPoint
-    };
-
-    return newPoint;
-  } catch (err) {
-    console.error('Failed to create point -- map store:', err);
-    throw err;
-  }
-},
-
-// UPDATE POINT
-async updatePoint(pointId, updates) {
-  try {
-    const payload = {};
-
-    // Only send fields that are being updated
-    if (updates.name !== undefined) payload.name = updates.name;
-    if (updates.description !== undefined) payload.description = updates.description;
-    if (updates.x !== undefined) payload.x = updates.x;
-    if (updates.y !== undefined) payload.y = updates.y;
-    if (updates.pX !== undefined) payload.pX = updates.pX;
-    if (updates.pY !== undefined) payload.pY = updates.pY;
-    if (updates.color !== undefined) payload.color = updates.color;
-    if (updates.icon !== undefined) payload.icon = updates.icon;
-    if (updates.category !== undefined) payload.category = updates.category;
-    if (updates.size !== undefined) payload.size = updates.size;
-
-    console.log('Updating point with payload:', payload);
-
-    const response = await fetch(`/api/points/${pointId}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
-    }
-
-    const updatedPoint = await response.json();
-    console.log('Point updated:', updatedPoint);
-
-    // Update in store
-    if (this.pointsById[pointId]) {
-      this.pointsById[pointId] = {
-        id: updatedPoint._id,
-        ...updatedPoint
-      };
-    }
-
-    return updatedPoint;
-  } catch (err) {
-    console.error('Failed to update point:', err);
-    throw err;
-  }
-},
-
-// DELETE POINT
-async deletePoint(mapId, pointId) {
-  try {
-    console.log('Deleting point:', pointId);
-    console.log('from map:', mapId);
-
-    const response = await fetch(`/api/points/${pointId}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
-    }
-
-    console.log('Point deleted successfully');
-
-    // Remove from store
-    if (this.pointIdsByMap[mapId]) {
-      this.pointIdsByMap[mapId] = this.pointIdsByMap[mapId].filter(
-        id => id !== pointId
-      );
-    }
-    delete this.pointsById[pointId];
-
-    return true;
-  } catch (err) {
-    console.error('Failed to delete point:', err);
-    throw err;
-  }
-},
-
-// FETCH POINTS
-// Replace your fetchPoints method in map.store.js with this debug version
-
-async fetchPoints(mapId) {
-  try {
-    console.log('========================================')
-    console.log('📍 FETCH POINTS - START')
-    console.log('Map ID:', mapId)
-    console.log('Current pointIdsByMap:', JSON.parse(JSON.stringify(this.pointIdsByMap)))
-    console.log('Current pointsById:', JSON.parse(JSON.stringify(this.pointsById)))
-
-    const response = await fetch(`/api/points/map/${mapId}`, {
-      headers: getAuthHeaders(),
-      credentials: 'include'
-    })
-
-    console.log('Response status:', response.status)
-    console.log('Response ok:', response.ok)
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Response error:', error)
-      throw new Error(error)
-    }
-
-    const points = await response.json()
-    console.log('📍 Points received from API:', points)
-    console.log('Number of points:', points.length)
-
-    // Store points
-    this.pointIdsByMap[mapId] = points.map(p => p._id)
-    console.log('Stored point IDs for map:', this.pointIdsByMap[mapId])
-
-    points.forEach(point => {
-      const storedPoint = {
-        id: point._id,
-        ...point
+        return points;
+      } catch (err) {
+        console.error('❌ Failed to fetch points:', err);
+        throw err;
       }
-      this.pointsById[point._id] = storedPoint
-      console.log('Stored point:', storedPoint)
-    })
+    },
 
-    console.log('📍 AFTER STORING:')
-    console.log('pointIdsByMap[mapId]:', this.pointIdsByMap[mapId])
-    console.log('pointsById:', JSON.parse(JSON.stringify(this.pointsById)))
-    console.log('========================================')
+    async createPoint(mapId, pointData) {
+      try {
+        const payload = {
+          category: pointData.category || pointData.icon || 'default',
+          x: pointData.x,
+          y: pointData.y,
+          pX: pointData.pX,
+          pY: pointData.pY,
+          name: pointData.name || '',
+          description: pointData.description || '',
+          color: pointData.color || '#ff0000',
+          icon: pointData.icon || pointData.category || 'location_on',
+          size: pointData.size || 10
+        };
 
-    return points
-  } catch (err) {
-    console.error('❌ Failed to fetch points:', err)
-    throw err
-  }
-},
+        const response = await fetch(`/api/points/map/${mapId}`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
 
-    async addTheIslandMap() {
-    // Prevent duplicates (optional but recommended)
-    const existingId = this.mapIds.find(
-      (id) => this.mapsById[id]?.baseMapName === "The Island"
-    );
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
 
-    if (existingId) {
-      this.setActiveMap(existingId);
-      return existingId;
-    }
+        const newPoint = await response.json();
 
-    const baseMap = this.baseMaps.find((b) => b.name === "The Island");
+        // Add to store
+        if (!this.pointIdsByMap[mapId]) {
+          this.pointIdsByMap[mapId] = [];
+        }
+        this.pointIdsByMap[mapId].push(newPoint._id);
+        this.pointsById[newPoint._id] = {
+          id: newPoint._id,
+          ...newPoint
+        };
 
-    if (!baseMap) {
-      throw new Error("Base map 'The Island' not found");
-    }
+        return newPoint;
+      } catch (err) {
+        console.error('Failed to create point:', err);
+        throw err;
+      }
+    },
 
-    const res = await fetch("/api/maps", {
-      method: "POST",
-      headers: getAuthHeaders(),
-      credentials: "include",
-      body: JSON.stringify({
-        baseMapName: "The Island",
-        title: "The Island Map",
-        img: baseMap.img,
-      }),
-    });
+    async updatePoint(pointId, updates) {
+      try {
+        const payload = {};
 
-    if (!res.ok) {
-      const msg = await res.text();
-      throw new Error(msg || "Failed to create map");
-    }
+        // Only send fields that are being updated
+        const allowedFields = ['name', 'description', 'x', 'y', 'pX', 'pY', 'color', 'icon', 'category', 'size'];
+        allowedFields.forEach(field => {
+          if (updates[field] !== undefined) {
+            payload[field] = updates[field];
+          }
+        });
 
-    const map = await res.json();
+        const response = await fetch(`/api/points/${pointId}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
 
-    this.mapsById[map._id] = map;
-    this.mapIds.push(map._id);
-    this.pointIdsByMap[map._id] = [];
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
 
-    this.setActiveMap(map._id);
+        const updatedPoint = await response.json();
 
-    return map._id;
-  }
+        // Update in store
+        if (this.pointsById[pointId]) {
+          this.pointsById[pointId] = {
+            id: updatedPoint._id,
+            ...updatedPoint
+          };
+        }
 
+        return updatedPoint;
+      } catch (err) {
+        console.error('Failed to update point:', err);
+        throw err;
+      }
+    },
+
+    async deletePoint(mapId, pointId) {
+      try {
+        const response = await fetch(`/api/points/${pointId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
+
+        // Remove from store
+        if (this.pointIdsByMap[mapId]) {
+          this.pointIdsByMap[mapId] = this.pointIdsByMap[mapId].filter(
+            id => id !== pointId
+          );
+        }
+        delete this.pointsById[pointId];
+
+        return true;
+      } catch (err) {
+        console.error('Failed to delete point:', err);
+        throw err;
+      }
+    },
   },
 });
