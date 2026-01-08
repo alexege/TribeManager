@@ -2,9 +2,9 @@ import jwt from "jsonwebtoken";
 
 // Auth Guard
 export const requireAuth = (req, res, next) => {
-    console.log("🔍 Auth Check:");
-    console.log("Headers:", req.headers);
-    console.log("Authorization:", req.headers.authorization);
+    // console.log("🔍 Auth Check:");
+    // console.log("Headers:", req.headers);
+    // console.log("Authorization:", req.headers.authorization);
 
   const header = req.headers.authorization;
 
@@ -18,7 +18,7 @@ export const requireAuth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("✅ Token decoded:", decoded);
+    // console.log("✅ Token decoded:", decoded);
     req.userId = decoded.userId;
     req.role = decoded.role; // Should Delete this?
     next();

@@ -32,7 +32,7 @@ export const getPointsByMap = async (req, res) => {
 export const createPoint = async (req, res) => {
   try {
     console.log("📍 Create point request:");
-    console.log("Body:", req.body);
+    console.log("================Body================:", req.body);
     console.log("Map ID:", req.params.mapId);
     console.log("User ID:", req.userId);
 
@@ -42,6 +42,9 @@ export const createPoint = async (req, res) => {
     if (x === undefined || y === undefined || pX === undefined || pY === undefined || !category) {
       return res.status(400).send("Missing required fields");
     }
+
+    console.log("mapId:", req.params.mapId);
+    console.log("ownerId:", req.userId);
 
     // Verify map ownership
     const map = await Map.findOne({
@@ -74,7 +77,7 @@ export const createPoint = async (req, res) => {
     res.status(201).json(point);
   } catch (err) {
     console.error("createPoint error:", err);
-    res.status(500).send("Failed to create point");
+    res.status(500).send("Failed to create point -- controller");
   }
 };
 

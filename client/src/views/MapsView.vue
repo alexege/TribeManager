@@ -6,7 +6,7 @@ import Map from '@/components/maps/Map.vue'
 
 /* Store */
 const mapStore = useMapStore()
-const { groupedMaps, baseMaps, activeMap, activeMapId } = storeToRefs(mapStore)
+const { groupedMaps, baseMaps, activeMap, activeMapId, activeMapInstance, setActiveMapInstance } = storeToRefs(mapStore)
 
 /* State */
 const selectedMapName = ref('The Island')
@@ -20,6 +20,7 @@ watchEffect(() => {
 })
 
 const setActiveMap = async (map) => {
+    mapStore.setActiveMapInstance(map.name)
     selectedMapName.value = map.name
 
     if (map.id) {
@@ -103,6 +104,9 @@ const createIsland = async () => {
 
 <template>
     <div class="container">
+        <span style="color:white; text-align: center;">activeMapInstance: {{  activeMapInstance }}</span>
+        <span style="color:white; text-align: center;">activeMapId: {{ activeMapId }}</span>
+        <span style="color:white; text-align: center;">{{ mapStore.mapsById[activeMapId]?.title }}</span>
 
         <h3 class="thumbnail-list-title">Maps</h3>
 
@@ -118,8 +122,14 @@ const createIsland = async () => {
 
         <!-- Map List -->
         <div class="map-layout">
-            <Map v-if="activeMap" :map="activeMap" :activeBaseMap="selectedMapName" :baseMaps="baseMaps" :newMapTitle="newMapTitle"
-                @update:newMapTitle="newMapTitle = $event" @add-map-instance="addMapInstance" />
+            <Map v-if="activeMap"
+            :map="activeMap"
+            :activeBaseMap="selectedMapName"
+            :baseMaps="baseMaps"
+            :newMapTitle="newMapTitle"
+            @update:newMapTitle="newMapTitle = $event"
+            @add-map-instance="addMapInstance"
+            />
             <div v-else>
                 No map found...
 

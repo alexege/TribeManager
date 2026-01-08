@@ -14,6 +14,7 @@ export const useMapStore = defineStore("map", {
     /* UI state */
     activeMapId: null,
     activeMapTab: "all",
+    activeMapInstance: "The Island",
 
     /* Static base maps (NOT persisted) */
     baseMaps: [
@@ -98,12 +99,18 @@ export const useMapStore = defineStore("map", {
   actions: {
     /* ---------- UI ---------- */
     setActiveMap(id) {
+      this.fetchPoints(this.activeMapId);
+      console.log("########## setting active map to########", id);
       this.activeMapId = id;
       this.activeMapTab = "all";
     },
 
     setActiveMapTab(tabId) {
       this.activeMapTab = tabId;
+    },
+
+    setActiveMapInstance(mapName) {
+      this.activeMapInstance = mapName;
     },
 
     /* ---------- MAPS ---------- */
@@ -315,7 +322,7 @@ async createPoint(mapId, pointData) {
 
     return newPoint;
   } catch (err) {
-    console.error('Failed to create point:', err);
+    console.error('Failed to create point -- map store:', err);
     throw err;
   }
 },

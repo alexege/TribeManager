@@ -107,6 +107,8 @@ const onAddPoint = (data) => {
         pX: Math.floor(data.x / mapWidth * 100 * scale.value),
         pY: Math.floor(data.y / mapHeight * 100 * scale.value)
     }
+    console.log("on-add-point", props.map);
+
     createPoint(props.map.id, newPoint)
     isModalOpen.value = false
 }

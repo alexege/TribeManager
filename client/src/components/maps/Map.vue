@@ -101,7 +101,7 @@ watch(filteredMapIds, async (newIds, oldIds) => {
     }
 
     resetMap()
-}, { immediate: false })
+}, { immediate: true })
 
 // ===== Lazy Load =====
 // ===== Watch for active map changes =====
@@ -120,6 +120,15 @@ watch(
   },
   { immediate: false }
 )
+
+watch(
+    () => mapStore.activeMapInstance,
+    async (newMap, oldMap) => {
+        console.log('-----------------Map has changed-----------------');
+        mapStore.fetchPoints(mapStore.activeMapId);
+    }, { immediate: false }
+)
+
 // ===== Mouse / Map Events =====
 const onMouseDown = (event) => {
     event.preventDefault()
@@ -244,7 +253,8 @@ const onAddPoint = (value) => {
         category: value.icon,
         size: value.size
     }
-    createPoint(props.map._id, newPoint)
+
+    createPoint(mapStore.activeMapId, newPoint)
     closeModal()
     activeTabIndex.value = 1
 }
@@ -441,6 +451,7 @@ const confirmDeleteMap = (mapId) => {
                                     @delete="confirmDeleteMap(id)">
                                     {{ mapStore.mapsById[id].title }}
                                 </InlineEdit>
+                                {{ mapStore.mapsById[id].baseMapName }}
                             </div>
                         </div>
                     </tab>
