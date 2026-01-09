@@ -67,7 +67,7 @@ function requestDelete() {
             <slot name="display">
                 <span class="value">{{ modelValue }}</span>
             </slot>
-
+            {{ placeholder }}
             <div class="controls">
                 <button class="icon" @click="start" :disabled="disabled" title="Edit">
                     ✏️

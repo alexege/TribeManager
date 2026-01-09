@@ -264,7 +264,7 @@ const numDropZones = computed(() => {
   /* grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); */
   grid-template-columns: repeat(var(--grid-cols, auto-fit), minmax(275px, 1fr));
 
-  grid-auto-rows: 165px;
+  grid-auto-rows: 175px;
   /* place-content: center; */
 
   /* grid-auto-rows: max-content; */

@@ -241,6 +241,7 @@ const backgroundStyle = computed(() => {
 })
 
 import notificationService from '@/utils/notificationService.js'
+import InlineEdit from '../inputs/InlineEdit.vue'
 const triggerNotification = (message, type, duration, persistent) => {
     notificationService.addNotification(message, type, duration, persistent)
 }
@@ -258,8 +259,14 @@ const timerName = computed(() =>
     <div class="countdown-timer" :class="{ timerComplete }"
         :style="{ border: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }">
 
+            <div class="timer-top">
+                <InlineEdit class="timer-name" :model-vale="timerName.value" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
+                    {{ timerName.value || 'Timer Name' }}
+                </InlineEdit>
+            </div>
+
           <div class="timer-middle">
-              <div class="time-remaining" :style="{ borderBottom: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }">
+              <div class="time-remaining" :style="[{ borderBottom: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' },{ borderTop: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }]">
                   <template v-if="editTimerTime">
                       <div class="time-input">
                           <div class="input-control">
@@ -358,6 +365,10 @@ i {
 
 i:not(.disabled):hover {
     color: white;
+}
+
+.timer-top {
+    padding: 10px 0;
 }
 
 .timer-middle {

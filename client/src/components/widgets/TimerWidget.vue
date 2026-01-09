@@ -9,6 +9,7 @@ const store = useTimerStore()
 
 const widgetEl = ref(null)
 const isDraggable = ref(false)
+const showPresets = ref(false)
 
 const handleControlBarMouseDown = () => {
   isDraggable.value = true
@@ -36,6 +37,11 @@ const handleDragEnd = (e) => {
 const handleNameUpdate = (e) => {
   store.updateWidgetName(props.widget.id, e.target.value)
 }
+
+const applyPreset = (preset) => {
+  store.applyPresetToWidget(props.widget.id, preset.seconds)
+  showPresets.value = false
+}
 </script>
 
 <template>
@@ -62,14 +68,47 @@ const handleNameUpdate = (e) => {
         {{ widget.type === 'countdown' ? '⏱' : '⏳' }}
       </button>
 
-      <input
+      <Transition name="slide-up">
+        <div
+          v-if="showPresets && widget.type === 'countdown'"
+          class="preset-drawer"
+          @mousedown.stop
+        >
+          <button
+            v-for="preset in store.presets"
+            :key="preset.id"
+            class="preset-chip"
+            @click="applyPreset(preset)"
+          >
+            {{ preset.label }}
+          </button>
+
+          <button class="preset-chip add">
+            + Custom
+          </button>
+        </div>
+      </Transition>
+
+
+      <button class="save-button">💾</button>
+
+      <button
+        class="preset-button"
+        @click.stop="showPresets = !showPresets"
+        @mousedown.stop
+        title="Presets"
+      >
+        ⚡
+      </button>
+
+      <!-- <input
         :value="widget.name"
         @input="handleNameUpdate"
         class="timer-name"
         placeholder="Timer name..."
         @click.stop
         @mousedown.stop
-      />
+      /> -->
 
       <div class="drag-handle">
         ⣿
@@ -141,12 +180,14 @@ const handleNameUpdate = (e) => {
 .control-bar {
   display: flex;
   align-items: center;
+  justify-content: end;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 4px 6px;
+  /* padding: 8px 12px; */
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px 12px 0 0;
-  min-height: 40px;
+  /* min-height: 40px; */
   cursor: grab;
 }
 
@@ -155,7 +196,9 @@ const handleNameUpdate = (e) => {
 }
 
 .drag-handle {
-  padding: 4px 8px;
+  /* padding: 4px 8px; */
+  padding: 0px 0 4px 0;
+
   border-radius: 6px;
   background: rgba(255,255,255,0.08);
   color: #ccc;
@@ -201,8 +244,8 @@ const handleNameUpdate = (e) => {
 }
 
 .delete-button {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border: none;
   border-radius: 6px;
   background: rgba(255, 50, 50, 0.15);
@@ -225,8 +268,8 @@ const handleNameUpdate = (e) => {
 }
 
 .toggle-button {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border: none;
   border-radius: 6px;
   background: rgba(100, 150, 255, 0.15);
@@ -252,4 +295,119 @@ const handleNameUpdate = (e) => {
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+.save-button {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(100, 150, 255, 0.15);
+  color: #9ecbff;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.save-button:hover {
+  opacity: 1;
+  background: rgba(100, 150, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.save-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* -------------------------------
+   Preset Button
+-------------------------------- */
+.preset-button {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 255, 120, 0.15);
+  color: #00ff78;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preset-button:hover {
+  opacity: 1;
+  background: rgba(0, 255, 120, 0.3);
+  transform: scale(1.1);
+}
+
+/* -------------------------------
+   Preset Drawer
+-------------------------------- */
+.preset-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,.95),
+    rgba(0,0,0,.75)
+  );
+  border-top: 1px solid rgba(0, 255, 120, 0.4);
+  z-index: 5;
+}
+
+.preset-chip {
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #00ff78;
+  border: 1px solid rgba(0,255,120,.6);
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.preset-chip:hover {
+  background: rgba(0,255,120,.15);
+  transform: translateY(-1px);
+}
+
+.preset-chip.add {
+  color: #9ecbff;
+  border-color: rgba(100,150,255,.5);
+}
+
+/* -------------------------------
+   Slide Animation
+-------------------------------- */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 </style>

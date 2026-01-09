@@ -1,5 +1,6 @@
 // stores/timer.store.js
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import { nanoid } from 'nanoid'
 
 const STORAGE_KEY = 'timer-widgets-state'
@@ -28,6 +29,22 @@ function saveToStorage(state) {
         console.error('Failed to save timer state:', e)
     }
 }
+
+const presets = ref([
+  { id: 'p5', label: '5 min', seconds: 300 },
+  { id: 'p15', label: '15 min', seconds: 900 },
+  { id: 'p25', label: 'Pomodoro', seconds: 1500 },
+  { id: 'p60', label: '1 hour', seconds: 3600 }
+])
+
+// const applyPresetToWidget = (widgetId, seconds) => {
+//   const widget = widgets.value.find(w => w.id === widgetId)
+//   if (!widget || widget.type !== 'countdown') return
+
+//   widget.timer.remaining = seconds
+//   widget.timer.duration = seconds
+//   widget.timer.isActive = false
+// }
 
 export const useTimerStore = defineStore('timer', {
     state: () => {
@@ -63,12 +80,16 @@ export const useTimerStore = defineStore('timer', {
 
         firstEmptyZone() {
             return this.dropzones.find(zone => !zone.occupied)
-        }
+        },
+
+        getTimerById: (state) => (widgetId) => {
+            const widget = state.widgets.find(w => w.id === widgetId)
+            return widget?.timer || null
+        },
     },
 
     actions: {
         addCountdown() {
-            console.log("adding countdown");
             const widget = {
                 id: nanoid(),
                 type: 'countdown',
@@ -132,6 +153,18 @@ export const useTimerStore = defineStore('timer', {
                 widget.name = newName
                 saveToStorage(this.$state)
             }
+        },
+
+
+        /* ---------- Presets ---------- */
+        applyPresetToWidget(widgetId, seconds){
+            const widget = getWidgetById(widgetId)
+            if (!widget || widget.type !== 'countdown') return
+
+            widget.timer.duration = seconds
+            widget.timer.remaining = seconds
+            widget.timer.isActive = false
+            widget.timer.startedAt = null
         },
 
         startDrag(widgetId) {

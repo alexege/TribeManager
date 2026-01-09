@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
+import InlineEdit from '@/components/inputs/InlineEdit.vue'
 
 const props = defineProps(['timer', 'widgetId'])
 const timerStore = useTimerStore()
@@ -121,8 +122,16 @@ function zeroPrefix(num, digit) {
 
 <template>
     <div class="stopwatch-timer">
+
+        <div class="timer-top">
+            <!-- :model-vale="timerName.value" -->
+            <InlineEdit class="timer-name" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
+                {{ timerName.value || 'Timer Name' }}
+            </InlineEdit>
+        </div>
+
         <div class="timer-middle">
-            <div class="time-remaining" :style="{ borderBottom: '2px solid white' }">
+            <div class="time-remaining" :style="[{ borderTop: '2px solid white' },{ borderBottom: '2px solid white' }]">
                 <span class="time-elapsed">{{ time }}</span>
             </div>
         </div>
