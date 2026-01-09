@@ -177,7 +177,7 @@ const handleDeleteTribe = async (tribeId) => {
 const handleAddPlayer = async tribeId => {
     ensureTribeState(tribeId);
 
-    if (!newPlayer[tribeId].inGameName.trim() || !newPlayer[tribeId].tribeId || !newPlayer[tribeId].dateSeen) return;
+    if (!(newPlayer[tribeId].inGameName.trim() || newPlayer[tribeId].steamName.trim() || newPlayer[tribeId].discordName) || !newPlayer[tribeId].tribeId || !newPlayer[tribeId].dateSeen) return;
 
     await addPlayer(tribeId, newPlayer[tribeId]);
     newPlayer[tribeId] = {
@@ -438,7 +438,8 @@ const closeAllMenus = () =>
             </div>
             <transition name="collapse">
                 <div v-if="openTribes[tribe._id]" class="content"
-                    :style="{ backgroundColor: `hsla(${(i * 37) % 360}, 70%, 94%, 0.25)` }">
+                >
+                <!-- :style="{ backgroundColor: `hsla(${(i * 37) % 360}, 70%, 94%, 0.25)` }" -->
                     <!-- Search Players -->
                     <!-- <div class="search-bar">
             <input v-model="tribeSearch[tribe._id]" placeholder="Search players..." />
@@ -589,7 +590,7 @@ const closeAllMenus = () =>
     display: flex;
     justify-content: space-between;
     background: var(--orange);
-    padding: 10px;
+    padding: 5px 10px;
     cursor: pointer;
     margin-bottom: .5em;
     font-weight: bold;
@@ -835,10 +836,11 @@ input {
 }
 
 .cell {
+    color: var(--text-primary);
     padding: 6px 8px;
     border-bottom: 1px solid #eee;
     word-break: break-word;
-    background-color: var(--void-black);
+    background-color: var(--border-subtle);
 }
 
 .cell.actions {

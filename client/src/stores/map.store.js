@@ -38,6 +38,7 @@ export const useMapStore = defineStore("map", {
 
     categories: [
       { name: "Raid-Target", icon: "colorize" },
+      { name: "Base-Spot", icon: "colorize" },
       { name: "Turrets", icon: "warning" },
       { name: "Resource", icon: "target" },
       { name: "Obelisk", icon: "radio_button_checked" },

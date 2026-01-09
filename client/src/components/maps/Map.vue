@@ -775,6 +775,11 @@ const confirmDeleteMap = (mapId) => {
   color: var(--orange);
 }
 
+.map-instance-name .map-tab-name {
+  text-align: start;
+  word-wrap:break-word;
+}
+
 .map-wrapper {
   position: relative;
   display: flex;

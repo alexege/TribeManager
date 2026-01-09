@@ -2,6 +2,15 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
+
 export const useTribeStore = defineStore("tribeStore", () => {
   const tribes = ref([]);
   const loading = ref(false);
@@ -38,7 +47,7 @@ export const useTribeStore = defineStore("tribeStore", () => {
 
     const res = await fetch("/api/tribes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       credentials: "include",
       body: JSON.stringify({ name }),
     });
@@ -61,7 +70,7 @@ export const useTribeStore = defineStore("tribeStore", () => {
 
     const res = await fetch(`/api/tribes/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       credentials: "include",
       body: JSON.stringify(patch),
     });

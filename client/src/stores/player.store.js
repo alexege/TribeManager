@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import axios from "axios";
+import api from "@/services/api";
 
 export const usePlayerStore = defineStore("players", {
   state: () => ({
@@ -8,33 +8,32 @@ export const usePlayerStore = defineStore("players", {
 
   actions: {
     async fetchPlayers() {
-      const res = await axios.get("/api/players");
+      const res = await api.get("/players");
       this.players = res.data;
     },
 
     async addPlayer(tribeId, playerData) {
-      const res = await axios.post("/api/players", {
+      const res = await api.post("/players", {
         ...playerData,
         tribeId,
       });
 
-      // Push DB-returned document (includes _id)
       this.players.push(res.data);
     },
 
     async updatePlayer(id, updates) {
-      const res = await axios.put(`/api/players/${id}`, updates);
+      const res = await api.put(`/players/${id}`, updates);
       const i = this.players.findIndex((p) => p._id === id);
       if (i !== -1) this.players[i] = res.data;
     },
 
     async deletePlayerFromStore(id) {
-      await axios.delete(`/api/players/${id}`);
+      await api.delete(`/players/${id}`);
       this.players = this.players.filter((p) => p._id !== id);
     },
 
     async removePlayersByTribe(tribeId) {
-      await axios.delete(`/api/players/tribe/${tribeId}`);
+      await api.delete(`/players/tribe/${tribeId}`);
       this.players = this.players.filter((p) => p.tribeId !== tribeId);
     },
 
