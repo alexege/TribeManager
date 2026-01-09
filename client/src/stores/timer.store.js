@@ -19,9 +19,9 @@ function loadFromStorage() {
 function saveToStorage(state) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            numDropZones: state.numDropZones || 48,
             widgets: state.widgets,
             gridCols: state.gridCols,
-            gridRows: state.gridRows,
             showGrid: state.showGrid
         }))
     } catch (e) {
@@ -35,9 +35,9 @@ export const useTimerStore = defineStore('timer', {
         const saved = loadFromStorage()
 
         return {
+            numDropZones: saved?.numDropZones || 48,
             widgets: saved?.widgets || [],
             gridCols: saved?.gridCols || 3,
-            gridRows: saved?.gridRows || 3,
             showGrid: saved?.showGrid ?? true,
             isDragging: false,
             draggedWidgetId: null,
@@ -48,7 +48,7 @@ export const useTimerStore = defineStore('timer', {
     getters: {
         dropzones(state) {
             const zones = []
-            for (let row = 0; row < state.gridRows; row++) {
+            for (let row = 0; row < 24; row++) {
                 for (let col = 0; col < state.gridCols; col++) {
                     zones.push({
                         id: `zone-${row}-${col}`,
@@ -63,24 +63,18 @@ export const useTimerStore = defineStore('timer', {
 
         firstEmptyZone() {
             return this.dropzones.find(zone => !zone.occupied)
-        },
-
-        getTimerById: (state) => (widgetId) => {
-            const widget = state.widgets.find(w => w.id === widgetId)
-            return widget?.timer || null
-        },
-
+        }
     },
 
     actions: {
         addCountdown() {
+            console.log("adding countdown");
             const widget = {
                 id: nanoid(),
                 type: 'countdown',
                 name: 'Countdown Timer',
                 zoneId: null,
                 timer: {
-                    name: 'Countdown Timer',
                     id: nanoid(),
                     duration: 300000,
                     isActive: false,
@@ -206,50 +200,19 @@ export const useTimerStore = defineStore('timer', {
             saveToStorage(this.$state)
         },
 
-        increaseRows() {
-            if (this.gridRows < 6) {
-                this.gridRows++
+        increaseDropZones() {
+            if (this.numDropZones < 100) {
+                this.numDropZones++
                 saveToStorage(this.$state)
             }
         },
 
-        decreaseRows() {
-            if (this.gridRows > 1) {
-                const maxRow = this.gridRows - 1
-                const hasWidgetsInLastRow = this.widgets.some(w => {
-                    const match = w.zoneId?.match(/zone-(\d+)-(\d+)/)
-                    return match && parseInt(match[1]) === maxRow
-                })
-
-                if (!hasWidgetsInLastRow) {
-                    this.gridRows--
-                    saveToStorage(this.$state)
-                }
-            }
-        },
-
-        increaseCols() {
-            if (this.gridCols < 8) {
-                this.gridCols++
+        decreaseDropZones() {
+            if (this.numDropZones > 1) {
+                this.numDropZones--
                 saveToStorage(this.$state)
             }
         },
-
-        decreaseCols() {
-            if (this.gridCols > 1) {
-                const maxCol = this.gridCols - 1
-                const hasWidgetsInLastCol = this.widgets.some(w => {
-                    const match = w.zoneId?.match(/zone-(\d+)-(\d+)/)
-                    return match && parseInt(match[2]) === maxCol
-                })
-
-                if (!hasWidgetsInLastCol) {
-                    this.gridCols--
-                    saveToStorage(this.$state)
-                }
-            }
-        },
-
         toggleGrid() {
             this.showGrid = !this.showGrid
             saveToStorage(this.$state)

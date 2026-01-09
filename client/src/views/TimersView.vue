@@ -5,6 +5,11 @@ import TimerWidget from '@/components/widgets/TimerWidget.vue'
 import { useTimerStore } from '@/stores/timer.store'
 
 const store = useTimerStore()
+const showDrag = ref(false)
+
+const gridVisible = computed(() => {
+  return store.showGrid || showDrag.value
+})
 
 /* ================================
    FLIP: widget DOM registry
@@ -45,6 +50,10 @@ const animateWidgets = async (firstPositions) => {
 /* ================================
    Existing drag handlers
 ================================ */
+const handleDragStart = () => {
+  showDrag.value = true
+}
+
 const handleDragOver = (e, zoneId) => {
   e.preventDefault()
   store.setHoveredZone(zoneId)
@@ -56,6 +65,8 @@ const handleDragLeave = () => {
 
 const handleDrop = async (e) => {
   e.preventDefault()
+
+  showDrag.value = false
 
   // 1️⃣ Capture FIRST positions BEFORE mutation
   const firstPositions = new Map()
@@ -72,44 +83,47 @@ const handleDrop = async (e) => {
   await animateWidgets(firstPositions)
 }
 
+const setColumnsWithFlip = async (cols) => {
+  const firstPositions = new Map()
+
+  store.widgets.forEach(w => {
+    const el = widgetEls.get(w.id)
+    if (el) firstPositions.set(w.id, el.getBoundingClientRect())
+  })
+
+  store.setCols(cols)
+
+  await animateWidgets(firstPositions)
+}
+import { computed } from 'vue'
+const numDropZones = computed(() => {
+  return store.numDropZones;
+})
+
 </script>
 
 <template>
   <div class="timers-view">
     <div class="toolbar">
       <div class="toolbar-section">
-        <button @click="store.addCountdown">+ Countdown</button>
-        <button @click="store.addStopwatch">+ Stopwatch</button>
+        <button @click="store.addCountdown"><span class="operator">+</span> Countdown</button>
+        <button @click="store.addStopwatch"><span class="operator">+</span> Stopwatch</button>
       </div>
 
       <div class="toolbar-divider"></div>
 
-      <div class="toolbar-section grid-controls">
-        <Transition name="collapse">
-          <span v-if="store.showGrid">
-            <span class="label">Rows:</span>
-            <button @click="store.decreaseRows" :disabled="store.gridRows <= 1">−</button>
-            <span class="count">{{ store.gridRows }}</span>
-            <button @click="store.increaseRows" :disabled="store.gridRows >= 6">+</button>
-
-            <span class="label">Cols:</span>
-            <button @click="store.decreaseCols" :disabled="store.gridCols <= 1">−</button>
-            <span class="count">{{ store.gridCols }}</span>
-            <button @click="store.increaseCols" :disabled="store.gridCols >= 8">+</button>
-          </span>
-        </Transition>
-
-        <ToggleSwitch v-model="store.showGrid"/>
+        <div class="toolbar-section grid-controls">
+          <button @click="store.decreaseDropZones()" :disabled="store.numDropZones <= 1"><span class="operator">−</span></button>
+          <input type="numeric" class="num-zones" v-model="store.numDropZones" @keydown.up="store.increaseDropZones" @keydown.down="store.decreaseDropZones">
+          <!-- <span class="count">{{ store.numDropZones }}</span> -->
+          <button @click="store.increaseDropZones()" :disabled="store.numDropZones >= 150"><span class="operator">+</span></button>
+          <ToggleSwitch v-model="store.showGrid"/>
       </div>
-    </div>
 
+    </div>
     <div
       class="timer-grid"
-      :class="{'grid--visible': !store.showGrid}"
-      :style="{
-        '--grid-cols': store.gridCols,
-        '--grid-rows': store.gridRows
-      }"
+      :class="{'grid--visible': !gridVisible}"
     >
       <div
         v-for="zone in store.dropzones"
@@ -120,6 +134,7 @@ const handleDrop = async (e) => {
           swap: zone.occupied && store.isDragging && store.hoveredZoneId === zone.id,
           occupied: zone.occupied
         }"
+        @dragstart="handleDragStart"
         @dragover="handleDragOver($event, zone.id)"
         @dragleave="handleDragLeave"
         @drop="handleDrop"
@@ -141,13 +156,11 @@ const handleDrop = async (e) => {
 
 <style scoped>
 .timers-view {
-  /* width: 100%; */
+  width: 100%;
   margin: 0 auto;
-  height: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
   text-align: center;
-  /* height: 100vh; */
-  /* overflow: hidden; */
-  background: linear-gradient(135deg, #14161f, #0b0c12);
   position: relative;
 }
 
@@ -159,7 +172,7 @@ const handleDrop = async (e) => {
   align-items: center;
   gap: 0.5em;
   padding: 0.5em 0.75em;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--secondary-bg-color);
   backdrop-filter: blur(8px);
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -209,6 +222,12 @@ const handleDrop = async (e) => {
   margin-left: 0.3em;
 }
 
+.grid-controls .label.active {
+  background: rgba(0, 255, 120, 0.2);
+  color: white;
+  font-weight: 600;
+}
+
 .grid-controls .count {
   color: white;
   font-size: 0.9em;
@@ -217,29 +236,72 @@ const handleDrop = async (e) => {
   font-weight: 600;
 }
 
+.grid-controls input[type="numeric"] {
+  color: var(--text-primary);
+  background: var(--secondary-bg-color);
+  width: 100%;
+  width: 24px;
+  appearance: none;
+  text-align: center;
+}
+
 /* Grid Layout */
 .timer-grid {
-  width: 100%;
+  /* height: 100vh; */
+  /* width: 100%; */
+  width: 80vw;
+  min-height: 100vh;
+  /* width: 100vw; */
   /* min-width: 80vw; */
+  /* width: 1080px; */
+  margin: 0 auto;
   /* height: 100%; */
   display: grid;
   /* grid-template-columns: repeat(var(--grid-cols), 1fr);
   grid-template-rows: repeat(var(--grid-rows), 1fr); */
-  grid-template-columns: repeat(var(--grid-cols), minmax(100px, max-content));
-  grid-template-rows: repeat(var(--grid-rows), minmax(100px, max-content));
+  /* grid-template-columns: repeat(var(--grid-cols), minmax(100px, max-content)); */
+  /* grid-template-rows: repeat(var(--grid-rows), minmax(100px, max-content)); */
+  /* grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); */
+  grid-template-columns: repeat(var(--grid-cols, auto-fit), minmax(275px, 1fr));
+
+  grid-auto-rows: 165px;
+  /* place-content: center; */
+
   /* grid-auto-rows: max-content; */
-  justify-content: center;
+  /* justify-content: center; */
+  justify-items: center;
   align-content: start;
-  gap: .5em;
-  padding: 80px 16px 16px 16px;
+
+  gap: 1em;
+  /* padding: 80px 16px 16px 16px; */
+  padding: 2em 0 .5em 0;
   box-sizing: border-box;
 }
 
 /* Dropzones */
 .dropzone {
-  min-width: 320px;
-  min-height: 200px;
+  width: 100%;
+  height: 100%;
 
+  /* max-width: 380px; */
+
+  /* max-width: 320px; */
+  /* max-height: 240px; */
+
+  justify-self: center;
+  align-self: center;
+
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* .dropzone {
+  width: 100%;
+  max-width: 320px;
   height: 100%;
   max-height: 200px;
   border: 2px dashed rgba(255, 255, 255, 0.15);
@@ -247,7 +309,7 @@ const handleDrop = async (e) => {
   transition: all 0.2s ease;
   display: flex;
   position: relative;
-}
+} */
 
 /* .dropzone {
   position: relative;
@@ -389,40 +451,23 @@ const handleDrop = async (e) => {
     opacity: 0;
 }
 
-/* =========================
-   Collapse transition
-========================= */
 
-.collapse-enter-active,
-.collapse-leave-active {
-  transition:
-    max-width 240ms cubic-bezier(.22,1,.36,1),
-    opacity 160ms ease,
-    transform 240ms cubic-bezier(.22,1,.36,1);
-  overflow: hidden;
-  white-space: nowrap;
+/* @media (max-width: 1080px) {
+  .timer-grid {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
 }
 
-.collapse-enter-from,
-.collapse-leave-to {
-  max-width: 0;
-  opacity: 0;
-  transform: translateX(-6px) scale(0.95);
-}
+@media (max-width: 700px) {
+  .timer-widget {
+    font-size: 0.95em;
+  }
+  .timer-grid {
+    grid-template-columns: 1fr;
+  }
+} */
 
-.collapse-enter-to,
-.collapse-leave-from {
-  max-width: 400px; /* safely larger than content */
-  opacity: 1;
-  transform: translateX(0) scale(1);
+.operator {
+  color: var(--primary-color);
 }
-
-.collapse-enter-active {
-  transition-delay: 40ms;
-}
-
-.collapse-leave-active {
-  transition-delay: 180ms;
-}
-
 </style>

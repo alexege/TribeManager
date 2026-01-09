@@ -96,7 +96,10 @@ const handleNameUpdate = (e) => {
 
 <style scoped>
 .timer-widget {
+  /* max-width: 450px; */
+  margin: 0 auto;
   width: 100%;
+  height: 100%;
   border-radius: 12px;
   background: linear-gradient(145deg, #0e0e0e, #000);
   box-shadow:
@@ -111,8 +114,8 @@ const handleNameUpdate = (e) => {
   position: relative;
   z-index: 1;
   will-change: transform;
-  aspect-ratio: 16 / 9;
-  max-width: 320px;
+  /* aspect-ratio: 16 / 9; */
+  /* max-width: 320px; */
 }
 
 .timer-widget[draggable="true"] {
@@ -169,6 +172,7 @@ const handleNameUpdate = (e) => {
 }
 
 .timer-name {
+  width: 100%;
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
