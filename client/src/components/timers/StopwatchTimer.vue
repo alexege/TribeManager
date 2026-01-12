@@ -123,25 +123,34 @@ function zeroPrefix(num, digit) {
 <template>
     <div class="stopwatch-timer">
 
-        <div class="timer-top">
-            <!-- :model-vale="timerName.value" -->
-            <InlineEdit class="timer-name" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
-                {{ timerName.value || 'Timer Name' }}
-            </InlineEdit>
+        <div class="timer-wrapper">
+
+        <div class="image">
+            <img src="../../assets/dinos/silhouette/Countdown.png" alt="">
         </div>
 
-        <div class="timer-middle">
-            <div class="time-remaining" :style="[{ borderTop: '2px solid white' },{ borderBottom: '2px solid white' }]">
-                <span class="time-elapsed">{{ time }}</span>
+        <div class="timer-body">
+            <div class="timer-top">
+                <InlineEdit class="timer-name" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
+                    {{ timerName.value || 'Timer Name' }}
+                </InlineEdit>
+            </div>
+
+            <div class="timer-middle">
+                <div class="time-remaining" :style="[{ borderTop: '2px solid white' },{ borderBottom: '2px solid white' }]">
+                    <span class="time-elapsed">{{ time }}</span>
+                </div>
+            </div>
+            <div class="timer-bottom">
+                <div class="timer-controls">
+                    <i v-if="!timer.isActive" @click="start" class='bx bx-play-circle'></i>
+                    <i v-else @click="stop" class='bx bx-pause-circle'></i>
+                    <i @click="reset" class='bx bx-reset'></i>
+                </div>
             </div>
         </div>
-        <div class="timer-bottom">
-            <div class="btn-container">
-                <i v-if="!timer.isActive" @click="start" class='bx bx-play-circle'></i>
-                <i v-else @click="stop" class='bx bx-pause-circle'></i>
-                <i @click="reset" class='bx bx-reset'></i>
-            </div>
         </div>
+
     </div>
 </template>
 
@@ -164,6 +173,25 @@ function zeroPrefix(num, digit) {
     transition: box-shadow 0.5s, transform 0.5s;
 }
 
+.timer-wrapper {
+    display: flex;
+    align-items: Center;
+}
+
+.timer-wrapper .image {
+    padding: .5em 0 .5em .5em;
+}
+
+.timer-wrapper .image img {
+    width: 100px;
+    height: 100px;
+}
+
+.timer-body {
+    width: 100%;
+    padding: .5em;
+}
+
 .timer-top,
 .timer-middle,
 .timer-bottom {
@@ -176,14 +204,6 @@ function zeroPrefix(num, digit) {
 
 .timer-top {
     padding: 10px 0;
-}
-
-.timer-top .controls {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: 2.5px 2.5px;
-    cursor: pointer;
 }
 
 .timer-middle {
@@ -206,13 +226,13 @@ function zeroPrefix(num, digit) {
     padding: 10px 0;
 }
 
-.timer-bottom .btn-container i {
-    padding: .10em .25em;
+.timer-bottom .timer-controls i {
+    /* padding: .10em .25em; */
     cursor: pointer;
     margin: 0 10px;
 }
 
-.timer-bottom .btn-container i:hover {
+.timer-bottom .timer-controls i:hover {
     color: white;
 }
 </style>

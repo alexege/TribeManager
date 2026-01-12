@@ -58,6 +58,8 @@ const applyPreset = (preset) => {
       @mousedown="handleControlBarMouseDown"
     >
 
+    <span style="margin-right: auto; opacity: 0.25; color: white">{{ widget.type === 'countdown' ? 'Countdown' : 'Stopwatch' }}</span>
+
       <button
         class="toggle-button"
         :disabled="widget.timer?.isActive"

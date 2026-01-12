@@ -259,60 +259,72 @@ const timerName = computed(() =>
     <div class="countdown-timer" :class="{ timerComplete }"
         :style="{ border: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }">
 
-            <div class="timer-top">
-                <InlineEdit class="timer-name" :model-vale="timerName.value" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
-                    {{ timerName.value || 'Timer Name' }}
-                </InlineEdit>
-            </div>
+            <div class="timer-wrapper">
 
-          <div class="timer-middle">
-              <div class="time-remaining" :style="[{ borderBottom: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' },{ borderTop: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }]">
-                  <template v-if="editTimerTime">
-                      <div class="time-input">
-                          <div class="input-control">
-                              <label>days</label>
-                              <input type="number" min="0" max="100" v-model.number="days" placeholder="Days"
-                                  @change="updateTimeRemaining" @keydown.enter="onStart()" />
+                <div class="image">
+                    <!-- <img src="../../assets/dinos/silhouette/Giganotosaurus.png" alt="" width="100" height="100" style="padding: .5em 0 .5em .5em;"> -->
+                    <img src="../../assets/dinos/silhouette/Stopwatch.png" alt="">
+                </div>
+
+            <div class="timer-body">
+                <div class="timer-top">
+                    <InlineEdit class="timer-name" :model-vale="timerName.value" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
+                        {{ timerName.value || 'Timer Name' }}
+                    </InlineEdit>
+                </div>
+
+              <div class="timer-middle">
+                  <div class="time-remaining" :style="[{ borderBottom: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' },{ borderTop: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }]">
+                      <template v-if="editTimerTime">
+                          <div class="time-input">
+                              <div class="input-control">
+                                  <label>days</label>
+                                  <input type="number" min="0" max="100" v-model.number="days" placeholder="Days"
+                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
+                              </div>
+                              <span>:</span>
+                              <div class="input-control">
+                                  <label>hours</label>
+                                  <input type="number" min="0" max="100" v-model.number="hours" placeholder="Hours"
+                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
+                              </div>
+                              <span>:</span>
+                              <div class="input-control">
+                                  <label>mins</label>
+                                  <input type="number" min="0" max="100" v-model.number="minutes" placeholder="Minutes"
+                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
+                              </div>
+                              <span>:</span>
+                              <div class="input-control">
+                                  <label>secs</label>
+                                  <input type="number" min="0" max="100" v-model.number="seconds" placeholder="Seconds"
+                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
+                              </div>
                           </div>
-                          <span>:</span>
-                          <div class="input-control">
-                              <label>hours</label>
-                              <input type="number" min="0" max="100" v-model.number="hours" placeholder="Hours"
-                                  @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                          </div>
-                          <span>:</span>
-                          <div class="input-control">
-                              <label>mins</label>
-                              <input type="number" min="0" max="100" v-model.number="minutes" placeholder="Minutes"
-                                  @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                          </div>
-                          <span>:</span>
-                          <div class="input-control">
-                              <label>secs</label>
-                              <input type="number" min="0" max="100" v-model.number="seconds" placeholder="Seconds"
-                                  @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                          </div>
-                      </div>
-                  </template>
-                  <template v-else>
-                      <span class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
-                  </template>
+                      </template>
+                      <template v-else>
+                          <span class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
+                      </template>
+                  </div>
               </div>
-          </div>
-        <div class="timer-bottom">
-            <div class="timer-controls">
-                <i @click="onReset()" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
-                <template v-if="timerActive">
-                    <i @click="onPause()" class='bx bx-pause-circle'></i>
-                </template>
-                <template v-else>
-                    <i @click="onStart()" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
-                </template>
+            <div class="timer-bottom">
+                <div class="timer-controls">
+                    <i @click="onReset()" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
+                    <template v-if="timerActive">
+                        <i @click="onPause()" class='bx bx-pause-circle'></i>
+                    </template>
+                    <template v-else>
+                        <i @click="onStart()" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
+                    </template>
 
-                <i @click="editTime" class='bx bx-edit'></i>
-                <i @click="onClear()" class='bx bx-x'></i>
+                    <i @click="editTime" class='bx bx-edit'></i>
+                    <i @click="onClear()" class='bx bx-x'></i>
+                </div>
             </div>
-        </div>
+            </div>
+
+            </div>
+
 
         <div class="time-up-overlay" v-if="timerComplete">
           <div class="timer-overlay">
@@ -327,12 +339,6 @@ const timerName = computed(() =>
 </template>
 
 <style scoped>
-.disabled {
-    color: gray;
-    opacity: 0.25;
-    cursor: not-allowed !important;
-}
-
 .countdown-timer {
     box-shadow: 5px 5px 10px black;
     box-sizing: border-box;
@@ -349,6 +355,25 @@ const timerName = computed(() =>
     transition: box-shadow 0.5s, transform 0.5s;
 }
 
+.timer-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.timer-wrapper .image {
+    padding: .5em 0 .5em .5em;
+}
+
+.timer-wrapper .image img {
+    width: 100px;
+    height: 100px;
+}
+
+.timer-body {
+    width: 100%;
+    padding: .5em;
+}
+
 .timer-top,
 .timer-middle,
 .timer-bottom {
@@ -356,14 +381,6 @@ const timerName = computed(() =>
     width: 100%;
     align-items: center;
     justify-content: center;
-    color: white;
-}
-
-i {
-    cursor: pointer;
-}
-
-i:not(.disabled):hover {
     color: white;
 }
 
@@ -421,6 +438,14 @@ i:not(.disabled):hover {
     margin: 0 10px;
 }
 
+i {
+    cursor: pointer;
+}
+
+i:not(.disabled):hover {
+    color: white;
+}
+
 .timer-overlay {
   display: flex;
   justify-content: center;
@@ -433,8 +458,6 @@ i:not(.disabled):hover {
 
 .time-up-overlay {
     position: absolute;
-    /* top: 0; */
-    /* left: 0; */
     width: 100%;
     height: 100%;
     background: black;
@@ -457,5 +480,11 @@ i:not(.disabled):hover {
 
 .timer-up-controls i {
     font-size: 2em;
+}
+
+.disabled {
+    color: gray;
+    opacity: 0.25;
+    cursor: not-allowed !important;
 }
 </style>
