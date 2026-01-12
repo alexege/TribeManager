@@ -3,16 +3,21 @@ import { ref } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 import CountdownTimer from '@/components/timers/CountdownTimer.vue'
 import StopwatchTimer from '@/components/timers/StopwatchTimer.vue'
+import ImagePickerModal from '@/components/modals/ImagePickerModal.vue'
 
 const props = defineProps({ widget: Object })
 const store = useTimerStore()
 
-const widgetEl = ref(null)
 const isDraggable = ref(false)
 const showPresets = ref(false)
 
 const handleControlBarMouseDown = () => {
   isDraggable.value = true
+}
+const showImagePicker = ref(false)
+
+const openImagePicker = () => {
+  showImagePicker.value = true
 }
 
 const handleDragStart = (e) => {
@@ -46,7 +51,6 @@ const applyPreset = (preset) => {
 
 <template>
   <div
-    ref="widgetEl"
     class="timer-widget"
     :draggable="isDraggable"
     @dragstart="handleDragStart"
@@ -91,7 +95,6 @@ const applyPreset = (preset) => {
         </div>
       </Transition>
 
-
       <button class="save-button">💾</button>
 
       <button
@@ -131,7 +134,20 @@ const applyPreset = (preset) => {
       :is="widget.type === 'countdown' ? CountdownTimer : StopwatchTimer"
       :timer="widget.timer"
       :widgetId="widget.id"
+      :widgetImage="widget.image"
+      :widgetName="widget.name"
+      @image-click="openImagePicker"
     />
+
+    <Teleport to="body">
+      <Transition name="modal-fade">
+        <ImagePickerModal
+          v-if="showImagePicker"
+          :widget-id="widget.id"
+          @close="showImagePicker = false"
+        />
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -410,6 +426,19 @@ const applyPreset = (preset) => {
 .slide-up-leave-to {
   transform: translateY(100%);
   opacity: 0;
+}
+
+
+/* Modal Fade Transition */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 
 </style>

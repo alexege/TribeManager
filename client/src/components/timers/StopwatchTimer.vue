@@ -3,7 +3,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 import InlineEdit from '@/components/inputs/InlineEdit.vue'
 
-const props = defineProps(['timer', 'widgetId'])
+const props = defineProps(['timer', 'widgetId', 'widgetImage', 'widgetName'])
+const emit = defineEmits(['image-click'])
 const timerStore = useTimerStore()
 
 const time = ref('00:00:00:00')
@@ -118,6 +119,18 @@ function updateDisplay() {
 function zeroPrefix(num, digit) {
     return String(num).padStart(digit, '0')
 }
+
+const timerFromStore = computed(() =>
+    timerStore.getTimerById(props.widgetId))
+
+const timerName = computed(() =>
+    timerFromStore.value?.name || 'Timer'
+)
+
+const onSaveName = (val) => {
+    timerStore.updateWidgetName(props.widgetId, val)
+}
+
 </script>
 
 <template>
@@ -126,13 +139,17 @@ function zeroPrefix(num, digit) {
         <div class="timer-wrapper">
 
         <div class="image">
-            <img src="../../assets/dinos/silhouette/Countdown.png" alt="">
+            <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
         </div>
 
         <div class="timer-body">
             <div class="timer-top">
-                <InlineEdit class="timer-name" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
-                    {{ timerName.value || 'Timer Name' }}
+                <InlineEdit
+                    class="timer-name"
+                    :model-value="timerName"
+                    @save="onSaveName"
+                    >
+                    {{ widgetName || 'Timer Name' }}
                 </InlineEdit>
             </div>
 
@@ -234,5 +251,14 @@ function zeroPrefix(num, digit) {
 
 .timer-bottom .timer-controls i:hover {
     color: white;
+}
+
+.timer-image {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timer-image:hover {
+  transform: scale(1.05);
 }
 </style>

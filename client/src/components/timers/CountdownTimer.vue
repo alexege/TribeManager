@@ -3,7 +3,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store.js'
 import soundService from '@/utils/soundService.js'
 
-const props = defineProps(['timer', 'widgetId'])
+const props = defineProps(['timer', 'widgetId', 'widgetImage', 'widgetName'])
+const emit = defineEmits(['image-click'])
 
 const timerStore = useTimerStore()
 const days = ref(0)
@@ -17,6 +18,7 @@ const percentLeft = ref(100)
 const timerComplete = ref(false)
 const editTimerTime = ref(false)
 const countDownId = ref(null)
+
 
 onMounted(() => {
     // Initialize from stored timer state
@@ -253,6 +255,10 @@ const timerFromStore = computed(() =>
 const timerName = computed(() =>
   timerFromStore.value?.name || 'Timer'
 )
+
+const onSaveName = (val) => {
+    timerStore.updateWidgetName(props.widgetId, val)
+}
 </script>
 
 <template>
@@ -262,14 +268,18 @@ const timerName = computed(() =>
             <div class="timer-wrapper">
 
                 <div class="image">
-                    <!-- <img src="../../assets/dinos/silhouette/Giganotosaurus.png" alt="" width="100" height="100" style="padding: .5em 0 .5em .5em;"> -->
-                    <img src="../../assets/dinos/silhouette/Stopwatch.png" alt="">
+                    <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
                 </div>
 
             <div class="timer-body">
                 <div class="timer-top">
-                    <InlineEdit class="timer-name" :model-vale="timerName.value" placeholder="Timer Name" @save="(val) => timerStore.updateTimer(activeTimer.id, val)">
-                        {{ timerName.value || 'Timer Name' }}
+                    <InlineEdit
+                        class="timer-name"
+                        :model-value="timerName"
+                        @save="onSaveName">
+                        <!-- {{ timerName.value || 'Timer Name' }} -->
+                        {{ widgetName || 'Timer Name' }}
+                        <!-- placeholder="Timer Name" -->
                     </InlineEdit>
                 </div>
 
@@ -284,7 +294,7 @@ const timerName = computed(() =>
                               </div>
                               <span>:</span>
                               <div class="input-control">
-                                  <label>hours</label>
+                                  <label>hrs</label>
                                   <input type="number" min="0" max="100" v-model.number="hours" placeholder="Hours"
                                       @change="updateTimeRemaining" @keydown.enter="onStart()" />
                               </div>
@@ -422,7 +432,7 @@ const timerName = computed(() =>
 
 .timer-middle .time-input .input-control input[type='number'] {
     font-size: 1em;
-    width: 40px;
+    width: 35px;
 }
 
 .timer-middle .timer-controls i {
@@ -487,4 +497,14 @@ i:not(.disabled):hover {
     opacity: 0.25;
     cursor: not-allowed !important;
 }
+
+.timer-image {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timer-image:hover {
+  transform: scale(1.05);
+}
+
 </style>

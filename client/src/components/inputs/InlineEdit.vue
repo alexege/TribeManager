@@ -102,6 +102,10 @@ function requestDelete() {
     gap: 6px;
 }
 
+.inline-edit .input {
+    width: 100%;
+}
+
 .value {
     font-weight: 600;
 }

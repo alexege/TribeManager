@@ -129,6 +129,7 @@ export const useTimerStore = defineStore('timer', {
                 name: 'Countdown Timer',
                 categoryId,
                 order: this.getWidgetsByCategory(categoryId).length,
+                image: '../../src/assets/timers/Stopwatch.png',
                 timer: {
                     id: nanoid(),
                     duration: 300000, // 5 minutes default
@@ -150,6 +151,7 @@ export const useTimerStore = defineStore('timer', {
                 name: 'Stopwatch Timer',
                 categoryId,
                 order: this.getWidgetsByCategory(categoryId).length,
+                image: '../../src/assets/timers/Stopwatch.png',
                 timer: {
                     id: nanoid(),
                     isActive: false,
@@ -184,8 +186,12 @@ export const useTimerStore = defineStore('timer', {
         },
 
         updateTimer(widgetId, timerUpdates) {
+            console.log("timerUpdate: ", widgetId, timerUpdates);
             const widget = this.widgets.find(w => w.id === widgetId)
+            console.log("widget: ", widget);
             if (widget && widget.timer) {
+                console.log("widget.timer: ", widget.timer);
+                console.log("widget.timer.name: ", widget.timer.name);
                 Object.assign(widget.timer, timerUpdates)
                 saveToStorage(this.$state)
             }
@@ -310,6 +316,14 @@ export const useTimerStore = defineStore('timer', {
             }
 
             saveToStorage(this.$state)
+        },
+
+        updateWidgetImage(widgetId, imagePath) {
+            const widget = this.widgets.find(w => w.id === widgetId)
+            if (widget) {
+                widget.image = imagePath
+                saveToStorage(this.$state)
+            }
         },
 
         /* ========== SYNC WITH MONGODB ========== */
