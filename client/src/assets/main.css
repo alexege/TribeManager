@@ -26,6 +26,11 @@
     --glitchy-grey: #333;
 }
 
+/* *,
+*::before,
+*::after {
+    box-sizing: border-box;
+} */
 
 html,
 body,

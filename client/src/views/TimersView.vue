@@ -179,7 +179,7 @@ const handleCategoryDrop = (e, targetCategory) => {
 
 <style scoped>
 .kanban-board {
-  min-height: 100vh;
+  /* min-height: 100vh; */
   width: 100%;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
   padding: 10px;
@@ -375,6 +375,7 @@ const handleCategoryDrop = (e, targetCategory) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 15px;
+  box-sizing: border-box;
 }
 
 .category-name-input {
@@ -387,6 +388,7 @@ const handleCategoryDrop = (e, targetCategory) => {
   font-size: 14px;
   margin-bottom: 10px;
   outline: none;
+  box-sizing:border-box
 }
 
 .category-name-input:focus {
