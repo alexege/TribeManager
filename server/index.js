@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.routes.js";
 import playerRoutes from "./routes/player.routes.js";
 import mapRoutes from "./routes/map.routes.js";
 import pointRoutes from "./routes/point.routes.js";
+import todoRoutes from "./routes/todo.routes.js";
 
 dotenv.config();
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/players", playerRoutes);
 app.use("/api/maps", mapRoutes);
 app.use("/api/points", pointRoutes);
+app.use("/api/todos", todoRoutes);
 
 const PORT = process.env.PORT || 3000;
 

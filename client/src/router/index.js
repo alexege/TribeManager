@@ -8,6 +8,7 @@ import DashboardView from "../views/DashboardView.vue";
 import TribeTrackerView from "../views/TribeTrackerView.vue";
 import MapsView from "../views/MapsView.vue";
 import TimersView from "../views/TimersView.vue";
+import TodoView from "../views/TodoView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -42,6 +43,12 @@ const router = createRouter({
       path: "/dashboard",
       name: "Dashboard",
       component: DashboardView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/todo",
+      name: "todo",
+      component: TodoView,
       meta: { requiresAuth: true },
     },
     {
