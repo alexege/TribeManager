@@ -25,11 +25,11 @@ const categorySchema = new mongoose.Schema(
 );
 
 // Optional: normalize names (e.g. "raid-target" → "Raid-Target")
-categorySchema.pre("save", function (next) {
-  if (this.name) {
-    this.name = this.name.trim();
-  }
-  next();
-});
+// categorySchema.pre("save", function (next) {
+//   if (this.name) {
+//     this.name = this.name.trim();
+//   }
+//   next();
+// });
 
 export default mongoose.model("Category", categorySchema);

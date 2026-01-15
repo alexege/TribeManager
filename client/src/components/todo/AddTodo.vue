@@ -65,7 +65,7 @@ const selectedOption = ref('')
 const customValue = ref({
   name: null,
   // author: JSON.parse(localStorage.getItem('user')).id || newTodo.value.author
-  author: 'placeholder-author'
+  author: activeUser.value._id || newTodo.value.author
 })
 
 const addACategory = async () => {
@@ -159,7 +159,7 @@ const permissionToManage = (category) => {
           <select v-model="selectedOption" @keydown.tab="addTodoCategory" class="select">
             <option value="" disabled>Category</option>
             <option value="custom">Custom</option>
-            <option vale="">None</option>
+            <option value="">None</option>
             <option :value="category.name" v-for="category in allCategories" :key="category">{{ category.name }}
             </option>
           </select>

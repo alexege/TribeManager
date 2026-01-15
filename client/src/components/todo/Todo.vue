@@ -8,7 +8,7 @@ import Category from "./category.vue";
 const emit = defineEmits(['category'])
 const props = defineProps({ todo: Object })
 const authStore = useAuthStore()
-const activeUser = computed(() => authStore.user)
+const activeUser = computed(() => authStore.activeUser)
 
 // Auth Store
 import { useAuthStore } from "@/stores/auth.store";

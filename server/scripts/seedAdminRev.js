@@ -31,7 +31,7 @@ export const seedAdmin = async () => {
       name: "Alex",
       email,
       password: hashedPassword,
-      roles: ["admin", "moderator", "user"],
+      roles: ["ROLE_ADMIN", "ROLE_MODERATOR", "ROLE_USER"],
       level: 105,
       isActive: true,
     };

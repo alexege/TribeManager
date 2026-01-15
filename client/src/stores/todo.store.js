@@ -79,7 +79,7 @@ export const useTodoListStore = defineStore('todoList', {
         async removeCategory(todo, category) {
             try {
                 await api.delete(`/todos/${todo._id}/category/${category}`)
-                todo.categories = todo.categories.fitler(
+                todo.categories = todo.categories.filter(
                     (cat) => cat.name !== category
                 )
             } catch (err) {
