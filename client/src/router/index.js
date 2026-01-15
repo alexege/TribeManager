@@ -9,6 +9,7 @@ import TribeTrackerView from "../views/TribeTrackerView.vue";
 import MapsView from "../views/MapsView.vue";
 import TimersView from "../views/TimersView.vue";
 import TodoView from "../views/TodoView.vue";
+import SettingsView from "../views/SettingsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -67,6 +68,12 @@ const router = createRouter({
       path: "/timers",
       name: "timers",
       component: TimersView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/settings",
+      name: "settings",
+      component: SettingsView,
       meta: { requiresAuth: true },
     },
   ],

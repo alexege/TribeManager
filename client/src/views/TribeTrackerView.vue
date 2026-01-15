@@ -1007,3 +1007,209 @@ select {
     }
 }
 </style>
+
+<!--
+/* ===============================
+   PAGE
+================================ */
+.page-title {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.tribes-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===============================
+   SEARCH / ADD
+================================ */
+.global-search,
+.add-tribe {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+input,
+select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: rgba(255, 255, 255, 0.9);
+  outline: none;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+button:hover {
+  color: #3b82f6;
+}
+
+/* ===============================
+   COLLAPSIBLE HEADERS
+================================ */
+.global-players-header,
+.tribe-collapsible > .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #111318;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.header-title {
+  flex: 1;
+}
+
+.header:hover {
+  background: #161923;
+}
+
+.arrow {
+  opacity: 0.6;
+}
+
+/* ===============================
+   DROPDOWN MENU
+================================ */
+.menu-wrapper {
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.menu-wrapper:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  background: #161923;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  min-width: 150px;
+  z-index: 50;
+}
+
+.dropdown-menu button {
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.dropdown-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ===============================
+   CONTENT PANEL
+================================ */
+.content {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 8px;
+}
+
+/* ===============================
+   TABLE GRIDS
+================================ */
+.player-table-grid,
+.all-players-table-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 2fr 70px 70px;
+}
+
+.header {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.cell {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.75rem;
+}
+
+.cell.actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cell.actions button {
+  opacity: 0.6;
+}
+
+.cell.actions button:hover {
+  opacity: 1;
+  color: #ef4444;
+}
+
+/* ===============================
+   ADD PLAYER
+================================ */
+.add-player-form {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 2fr 70px 70px;
+  gap: 6px;
+}
+
+.add-player-btn {
+  color: #3b82f6;
+}
+
+/* ===============================
+   GLOBAL CONTROLS
+================================ */
+.global-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.global-controls button {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.global-controls button:hover {
+  color: #3b82f6;
+}
+
+/* ===============================
+   COLLAPSE ANIMATION
+================================ */
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.collapse-enter-from,
+.collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+} -->

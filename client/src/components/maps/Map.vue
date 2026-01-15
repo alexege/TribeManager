@@ -824,11 +824,13 @@ const confirmDeleteMap = (mapId) => {
 .vertical-line {
   width: 2px;
   height: 100%;
+  /* background-color: var(--primary-color); */
 }
 
 .horizontal-line {
   height: 2px;
   width: 100%;
+  /* background-color: var(--primary-color); */
 }
 
 .horizontal-line-text,

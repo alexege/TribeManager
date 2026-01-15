@@ -99,6 +99,7 @@ function selectImage(src) {
     display: grid;
     place-items: center;
     z-index: 9999;
+    backdrop-filter: blur(3px);
 }
 
 .modal {
