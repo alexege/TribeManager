@@ -348,9 +348,9 @@ const confirmDeleteMap = (mapId) => {
           v-if="activeMap"
           class="map-name"
           :model-value="activeMap.title"
-          placeholder="Map name"
           @save="(val) => mapStore.updateMapName(activeMap.id, val)"
-        >
+          >
+          <!-- placeholder="Map name" -->
           <template #display>
             <h3>{{ activeMap.title }}</h3>
           </template>
@@ -456,11 +456,11 @@ const confirmDeleteMap = (mapId) => {
                 <InlineEdit
                   class="map-tab-name"
                   :model-value="mapStore.mapsById[id].title"
-                  placeholder="Map name"
                   deletable
                   @save="(val) => mapStore.updateMapName(id, val)"
                   @delete="confirmDeleteMap(id)"
-                >
+                  >
+                  <!-- placeholder="Map name" -->
                   {{ mapStore.mapsById[id].title }}
                 </InlineEdit>
               </div>
