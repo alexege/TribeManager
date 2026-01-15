@@ -23,7 +23,7 @@ const router = createRouter({
       component: AdminDashboard,
       meta: {
         requiresAuth: true,
-        roles: ["admin"],
+        roles: ["ROLE_ADMIN"],
       },
     },
     {
@@ -31,7 +31,7 @@ const router = createRouter({
       component: ModerationPanel,
       meta: {
         requiresAuth: true,
-        roles: ["admin", "moderator"],
+        roles: ["ROLE_ADMIN", "ROLE_MODERATOR"],
       },
     },
     {

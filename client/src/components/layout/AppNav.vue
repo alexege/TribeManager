@@ -17,7 +17,7 @@ const isAuthed = computed(() => auth.isAuthenticated)
 
         <!-- Logged IN -->
         <template v-else>
-            <RouterLink to="/" class="nav-item">Home</RouterLink>
+            <RouterLink to="/dashboard" class="nav-item">Home</RouterLink>
             <RouterLink to="/todo" class="nav-item">Todo</RouterLink>
             <RouterLink to="/tracker" class="nav-item">Player Track</RouterLink>
             <RouterLink to="/maps" class="nav-item">Maps</RouterLink>

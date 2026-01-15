@@ -1,4 +1,4 @@
-/* Used to create login users and manage authentication */
+/* Used to create login user and manage authentication */
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import api from "../services/api";
@@ -9,7 +9,7 @@ export const useAuthStore = defineStore("auth", () => {
   // STATE
   // ─────────────
   const token = ref(localStorage.getItem("token") || null);
-  const user = ref(null);
+  const activeUser = ref(null);
   const loading = ref(false);
   const error = ref(null);
 
@@ -19,10 +19,10 @@ export const useAuthStore = defineStore("auth", () => {
   // ─────────────
   // GETTERS
   // ─────────────
-  const isAuthenticated = computed(() => !!token.value && !!user.value);
-  const isAdmin = computed(() => user.value?.role === "admin");
+  const isAuthenticated = computed(() => !!token.value && !!activeUser.value);
+  const isAdmin = computed(() => activeUser.value?.role === "ROLE_ADMIN");
   const isModerator = computed(() =>
-    ["admin", "moderator"].includes(user.value?.role)
+    ["ROLE_ADMIN", "ROLE_MODERATOR"].includes(activeUser.value?.role)
   );
 
   // ─────────────
@@ -39,9 +39,9 @@ export const useAuthStore = defineStore("auth", () => {
       token.value = refresh.data.token;
       localStorage.setItem("token", token.value);
 
-      // Fetch user
+      // Fetch activeUser
       const res = await api.get("/auth/me");
-      user.value = res.data;
+      activeUser.value = res.data;
     } catch {
       await logout(false);
     } finally {
@@ -59,9 +59,9 @@ export const useAuthStore = defineStore("auth", () => {
       token.value = refresh.data.token;
       localStorage.setItem("token", token.value);
 
-      // 2️⃣ Fetch user
+      // 2️⃣ Fetch activeUser
       const res = await api.get("/auth/me");
-      user.value = res.data;
+      activeUser.value = res.data;
     } catch {
       await logout(false);
     } finally {
@@ -79,9 +79,9 @@ export const useAuthStore = defineStore("auth", () => {
       token.value = res.data.token;
       localStorage.setItem("token", token.value);
 
-      // 2️⃣ Fetch user
+      // 2️⃣ Fetch activeUser
       const me = await api.get("/auth/me");
-      user.value = me.data;
+      activeUser.value = me.data;
 
       router.push("/dashboard");
     } catch (err) {
@@ -114,7 +114,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
 
     token.value = null;
-    user.value = null;
+    activeUser.value = null;
     localStorage.removeItem("token");
 
     if (redirect) {
@@ -125,7 +125,7 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     // state
     token,
-    user,
+    activeUser,
     loading,
     error,
     authReady,

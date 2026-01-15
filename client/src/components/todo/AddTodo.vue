@@ -5,6 +5,7 @@ import { useTodoListStore } from "@/stores/todo.store";
 import { useCategoryStore } from "../../stores/category.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { useUserStore } from "../../stores/user.store.js";
+const { activeUser } = storeToRefs(useAuthStore())
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -39,7 +40,7 @@ const addItemAndClear = () => {
     categories: categories,
     priority: newTodo.value.priority,
     completed: newTodo.value.completed,
-    author: authStore.user._id || newTodo.value.author,
+    author: activeUser.value._id || newTodo.value.author,
     // author: JSON.parse(localStorage.getItem('user'))._id || newTodo.value.author,
   };
 
@@ -116,10 +117,9 @@ const removeCategory = (category) => {
 
 
 // Permission to interact / edit content
-const { activeUser } = storeToRefs(useAuthStore())
 const permissionToManage = (category) => {
   console.log("category:", category);
-  console.log("ActiveUser.avalue:", activeUser.value);
+  console.log("ActiveUser.value:", activeUser.value);
   // Admin, Moderator, Author/Owner
 
   if (activeUser.value) {

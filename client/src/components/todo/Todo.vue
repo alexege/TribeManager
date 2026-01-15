@@ -29,8 +29,8 @@ const canManage = computed(() => {
   if (!activeUser) return false
   const user = activeUser
   return (
-    user.value.roles.includes("admin" ) ||
-    user.value.roles.includes("moderator") ||
+    user.value.roles.includes("ROLE_ADMIN" ) ||
+    user.value.roles.includes("ROLE_MODERATOR") ||
     (props.todo.author && user.id === props.todo.author._id)
   )
 })

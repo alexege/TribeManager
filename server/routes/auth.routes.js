@@ -139,7 +139,7 @@ router.post("/logout", (req, res) => {
   res.json({ message: "Logged out" });
 });
 
-router.get("/admin/stats", requireAuth, requireRole("admin"), (req, res) => {
+router.get("/admin/stats", requireAuth, requireRole("ROLE_ADMIN"), (req, res) => {
   res.json({ secret: "admin-only data" });
 });
 

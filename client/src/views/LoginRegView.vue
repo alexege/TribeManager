@@ -52,7 +52,7 @@ function resetErrors() {
     emailError.value = ''
     passwordError.value = ''
     confirmPasswordError.value = ''
-    authStore.clearError()
+    // authStore.clearError()
 }
 
 function resetFields() {
