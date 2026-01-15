@@ -168,235 +168,188 @@ const activeCategory = (cat) => {
 </script>
 
 <template>
-  <div id="app">
-    <div class="container">
-      <h1 class="title">To do List</h1>
-      <AddTodo />
+  <div class="todo-view">
 
-      <!-- Category List -->
-      <div class="category-list">
-        <div class="category" @click.prevent="activeCategory('All')"
-          :class="{ active: activeCategoryFilter === 'All' }">All</div>
-        <div v-for="category in allCategories" :key="category" class="category"
-          :class="{ active: category.name === activeCategoryFilter }" @click.prevent="activeCategory(category.name)">
-          <span>{{ category.name }}</span>
-        </div>
+    <h1 class="view-title">TASK CONTROL</h1>
+
+    <!-- Add Todo Panel -->
+    <AddTodo />
+
+    <!-- Category Filters -->
+    <div class="category-strip">
+      <div
+        class="category-chip"
+        :class="{ active: activeCategoryFilter === 'All' }"
+        @click="activeCategory('All')"
+      >
+        ALL
       </div>
 
-      <!-- Incomplete Item Rows -->
-      <div class="incomplete-items" v-if="filteredTodosIncomplete.length">
-        <h4 class="grid-title incomplete">Incomplete Items ({{ filteredTodosIncomplete.length }})</h4>
-        <!-- Header Row -->
-        <div class="grid-header">
-          <div class="grid-header-item" v-for="(header, index) in headers" :key="'header-' + index"
-            @click="header.key && toggleSort(header.key)">
-            {{ header.label }}
-            <span v-if="sortBy === header.key">
-              {{ sortDir === 1 ? '↑' : '↓' }}
-            </span>
-          </div>
-        </div>
-
-        <hr style="margin-bottom: .75em;">
-
-        <div class="grid-items">
-          <div v-for="todo in sortedTodosIncomplete" :key="todo._id">
-            <!-- <todo :todo="todo" @category="handleCategorySelection" /> -->
-            <todo :todo="todo" @category="activeCategory($event)" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Completed Item Rows -->
-      <div class="completed-items" v-if="filteredTodosComplete.length">
-
-        <h4 class="grid-title completed">Completed Items ({{ filteredTodosComplete.length }})</h4>
-
-        <!-- Header Row -->
-        <div class="grid-header">
-          <div class="grid-header-item" v-for="(header, index) in headers" :key="'header-' + index"
-            @click="header.key && toggleSort(header.key)">
-            {{ header.label }}
-            <span v-if="sortBy === header.key">
-              {{ sortDir === 1 ? '↑' : '↓' }}
-            </span>
-          </div>
-        </div>
-
-        <hr style="margin-bottom: .75em;">
-
-        <div class="grid-items">
-          <div v-for="todo in sortedTodosComplete" :key="todo._id">
-            <todo :todo="todo" />
-          </div>
-        </div>
+      <div
+        v-for="category in allCategories"
+        :key="category._id"
+        class="category-chip"
+        :class="{ active: category.name === activeCategoryFilter }"
+        @click="activeCategory(category.name)"
+      >
+        {{ category.name }}
       </div>
     </div>
+
+    <!-- Incomplete -->
+    <section v-if="filteredTodosIncomplete.length" class="todo-panel">
+      <h4 class="panel-title incomplete">
+        INCOMPLETE ({{ filteredTodosIncomplete.length }})
+      </h4>
+
+      <div class="grid-header">
+        <div
+          v-for="(header, index) in headers"
+          :key="index"
+          class="grid-header-item"
+          @click="header.key && toggleSort(header.key)"
+        >
+          {{ header.label }}
+          <span v-if="sortBy === header.key">
+            {{ sortDir === 1 ? '▲' : '▼' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid-items">
+        <todo
+          v-for="todo in sortedTodosIncomplete"
+          :key="todo._id"
+          :todo="todo"
+          @category="activeCategory($event)"
+        />
+      </div>
+    </section>
+
+    <!-- Completed -->
+    <section v-if="filteredTodosComplete.length" class="todo-panel">
+      <h4 class="panel-title completed">
+        COMPLETED ({{ filteredTodosComplete.length }})
+      </h4>
+
+      <div class="grid-header">
+        <div
+          v-for="(header, index) in headers"
+          :key="index"
+          class="grid-header-item"
+          @click="header.key && toggleSort(header.key)"
+        >
+          {{ header.label }}
+          <span v-if="sortBy === header.key">
+            {{ sortDir === 1 ? '▲' : '▼' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid-items">
+        <todo
+          v-for="todo in sortedTodosComplete"
+          :key="todo._id"
+          :todo="todo"
+        />
+      </div>
+    </section>
+
   </div>
 </template>
 
+
 <style scoped>
-.active {
-  color: black;
-  background-color: white;
-  border: 1px solid black;
-  /* background-color: rgba(255, 255, 255, 0.15); */
+.todo-view {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+  color: white;
 }
 
-#app {
-  font-family: Arial, sans-serif;
+/* Title */
+.view-title {
   text-align: center;
-  margin-top: 20px;
-  /* width: 80%; */
-  margin: 0 auto;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  opacity: 0.8;
+  margin-bottom: 1rem;
 }
 
-.container {
-  width: 80%;
-  margin: 0 auto;
-}
-
-h1.title {
-  margin: 1.5em;
-}
-
-/* Category List */
-.category-list {
-  max-width: 80%;
-  margin: 0 auto;
+/* Category Filter Strip */
+.category-strip {
   display: flex;
+  gap: 0.5rem;
   justify-content: center;
-  gap: 0.5em;
-  padding: 1em;
   flex-wrap: wrap;
+  margin: 1rem 0;
 }
 
-.category {
-  font-size: .75em;
-  border: 1px solid white;
-  padding: 6px 12px;
-  border-radius: 12px;
+.category-chip {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 0.7rem;
   cursor: pointer;
 }
 
-.delete-category {
-  border: 1px solid white;
-  border-radius: 50%;
-  padding: 2px 4px;
-  margin: 0 2px;
-  cursor: pointer;
+.category-chip.active {
+  border-color: lime;
+  color: lime;
 }
 
-.delete-category:hover {
+/* Panels */
+.todo-panel {
+  margin-top: 1.25rem;
+  padding: 0.75rem;
+  background: rgba(15,15,15,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Panel Titles */
+.panel-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.panel-title.incomplete {
   color: red;
 }
 
-.grid-title {
-  color: white;
-  margin: 1em;
+.panel-title.completed {
+  color: lime;
 }
 
-.grid-title.incomplete {
-  color: #ff0000;
-}
-
-.grid-title.completed {
-  color: #00ff00;
-}
-
+/* Grid Header */
 .grid-header {
   display: grid;
   grid-template-columns: .5fr 2fr 4fr 1fr 1fr 1fr;
-  /* 4 equal-width columns */
-  margin-bottom: 10px;
-  gap: 10px;
-  font-weight: bold;
-  text-align: center;
+  gap: 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 
 .grid-header-item {
-  color: white;
+  text-align: center;
+  font-size: 0.7rem;
+  opacity: 0.7;
   cursor: pointer;
 }
 
+.grid-header-item:hover {
+  opacity: 1;
+}
+
+/* Items */
 .grid-items {
-  display: grid;
-  grid-template-columns: 1fr;
-  /* Single column to ensure each item takes up an entire row */
-  gap: 10px;
-  margin-bottom: 5em;
-}
-
-.grid-item {
-  display: grid;
-  grid-template-columns: .5fr 3fr 1fr 1fr 1fr;
-  /* 4 equal-width columns for each item */
-  gap: 10px;
-  color: white;
-  /* border: 1px solid #ccc; */
-  /* background-color: #f9f9f9; */
-}
-
-.grid-item-field {
   display: flex;
-  padding: 5px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
 }
 
-.grid-item-field:not(:first-of-type):not(:last-of-type) {
-  border: 1px solid #ccc;
-}
-
-.grid-item-field.actions {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  cursor: pointer;
-}
-
-.grid-item-field.actions button {
-  padding: .25em;
-  background: none;
-  color: white;
-  border: 1px solid white;
-  cursor: pointer;
-}
-
-.grid-item-field.actions button:hover {
-  padding: .25em;
-  background: none;
-  color: black;
-  background-color: white;
-  border: 1px solid black;
-  cursor: pointer;
-}
-
-.add-item {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-}
-
-.add-item-button {
-  margin: 1em 0;
-  padding: .25em;
-  cursor: pointer;
-}
-
-.add-item input[type="text"] {
-  height: 25px;
-  min-width: 30em;
-}
-
-.add-item select {
-  height: 30px;
-  width: 85px;
-}
-
+/* Priority colors */
 .low {
   color: lime;
 }
@@ -408,4 +361,5 @@ h1.title {
 .high {
   color: red;
 }
+
 </style>

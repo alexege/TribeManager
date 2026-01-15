@@ -23,7 +23,7 @@ export const useCategoryStore = defineStore('category', () => {
         clearError();
         try {
             const { data } = await api.get("/categories");
-            categories.value = [{ name: "All" }, ...data];
+            categories.value = [...data];
         } catch (err) {
             error.value = err.response?.data?.message || err.message;
             console.log("Error fetching categories:", err);

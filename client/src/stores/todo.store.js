@@ -60,21 +60,60 @@ export const useTodoListStore = defineStore('todoList', {
         async addTodo(todo) {
             const userStore = useUserStore()
             const categoryStore = useCategoryStore()
-            const author = userStore.users.find(
-                (user) => user._id === todo.author
-            )
-            const category = categoryStore.categories.find(
-                (cat) => cat.name === todo.category
-            )
+
             try {
-                const { data: createdTodo } = await api.post('/todos', todo)
-                if (author) createdTodo.author = author
-                if (category) createdTodo.categories.push(category)
+                // Find category objects from category names
+                const categoryObjects = todo.categories
+                    .map(categoryName =>
+                        categoryStore.categories.find(cat => cat.name === categoryName)
+                    )
+                    .filter(cat => cat && cat._id) // Remove null/undefined and "All" category
+                    .map(cat => cat._id) // Extract just the IDs for the API
+
+                // Prepare the todo payload with category IDs
+                const todoPayload = {
+                    ...todo,
+                    categories: categoryObjects
+                }
+
+                // Create the todo in the database
+                const { data: createdTodo } = await api.post('/todos', todoPayload)
+
+                // Populate the author if available
+                if (todo.author) {
+                    const author = userStore.users.find(user => user._id === todo.author)
+                    if (author) createdTodo.author = author
+                }
+
+                // Populate the categories with full objects for local state
+                createdTodo.categories = categoryObjects.map(catId =>
+                    categoryStore.categories.find(cat => cat._id === catId)
+                ).filter(Boolean)
+
+                // Add to local state
                 this.todoList.push(createdTodo)
             } catch (err) {
                 console.error('Error adding todo:', err)
             }
         },
+        // async addTodo(todo) {
+        //     const userStore = useUserStore()
+        //     const categoryStore = useCategoryStore()
+        //     const author = userStore.users.find(
+        //         (user) => user._id === todo.author
+        //     )
+        //     const category = categoryStore.categories.find(
+        //         (cat) => cat.name === todo.category
+        //     )
+        //     try {
+        //         const { data: createdTodo } = await api.post('/todos', todo)
+        //         if (author) createdTodo.author = author
+        //         if (category) createdTodo.categories.push(category)
+        //         this.todoList.push(createdTodo)
+        //     } catch (err) {
+        //         console.error('Error adding todo:', err)
+        //     }
+        // },
         // ===== Remove Category =====
         async removeCategory(todo, category) {
             try {
@@ -100,7 +139,7 @@ export const useTodoListStore = defineStore('todoList', {
         // ===== Edit Todo =====
         async editTodo(itemId, updateItem) {
             try {
-                const { data: updatedTodo } = await api.put((`/todos/${itemId}`, updatedItem))
+                const { data: updatedTodo } = await api.put((`/todos/${itemId}`, updateItem))
                 const index = this.todoList.findIndex(
                     (todo) => todo._id === itemId
                 )

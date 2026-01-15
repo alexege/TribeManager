@@ -59,242 +59,226 @@ const handleWheel = (event) => {
 
 
 <template>
-  <div class="todo-container">
-    <div class="completion grid-item-field">
-      <input v-if="canManage" type="checkbox" class="checkbox" @click="todoStore.toggleCompleted(todo)"
-        :checked="todo.completed" />
+<div>
+  <Transition name="todo-complete">
+    <div class="todo-row-panel" :class="{ completed: todo.completed }">
+
+    <div class="grid completion">
+      <input
+        v-if="canManage"
+        type="checkbox"
+        class="checkbox"
+        @click="todoStore.toggleCompleted(todo)"
+        :checked="todo.completed"
+      />
     </div>
 
-    <div class="categories grid-item-field" @wheel.prevent="handleWheel" ref="scrollContainer">
+    <div class="grid categories" @wheel.prevent="handleWheel" ref="scrollContainer">
       <div class="category-wrapper">
-        <Category v-for="category in todo.categories" :key="category._id" :category="category"
-          @category="$emit('category', $event)" />
+        <Category
+          v-for="category in todo.categories"
+          :key="category._id"
+          :category="category"
+          @category="$emit('category', $event)"
+        />
       </div>
     </div>
 
-    <div class="content grid-item-field">
-      <span class="todo-body" @dblclick="toggleEditMode">
-        <span :class="{ completed: todo.completed }">{{ todo.title }}</span>
+    <div class="grid content">
+      <span
+        class="todo-body"
+        :class="{ completed: todo.completed }"
+        @dblclick="toggleEditMode"
+      >
+        {{ todo.title }}
       </span>
     </div>
 
-    <div class="author grid-item-field">
-      <template v-if="todo.author?.name">{{ todo.author.name }}</template>
+    <div class="grid author">
+      {{ todo.author?.name || '' }}
     </div>
 
-    <div class="priority grid-item-field"
-      :class="{ high: todo.priority === 'High', medium: todo.priority === 'Medium', low: todo.priority === 'Low' }">
-      <span class="priority">{{ todo.priority }}</span>
+    <div
+      class="grid priority"
+      :class="todo.priority?.toLowerCase()"
+    >
+      {{ todo.priority }}
     </div>
 
-    <div class="actions grid-item-field">
-      <span :class="{ disabled: !canManage }" @click="canManage && toggleEditMode">
-        <i class="bx bx-edit"></i>
-      </span>
-      <span :class="{ disabled: !canManage }" @click="canManage && deleteTodoItem(todo._id)">
-        <i class="bx bx-trash"></i>
-      </span>
+    <div class="grid actions">
+      <i
+        class="bx bx-edit"
+        :class="{ disabled: !canManage }"
+        @click="canManage && toggleEditMode()"
+      ></i>
+      <i
+        class="bx bx-trash"
+        :class="{ disabled: !canManage }"
+        @click="canManage && deleteTodoItem(todo._id)"
+      ></i>
     </div>
 
-    <ModalEditTodo :show="isEditing" :todo="editItem" @close="isEditing = false" @update="updateTodo" />
+    </div>
+  </Transition>
+
+    <ModalEditTodo
+      :show="isEditing"
+      :todo="editItem"
+      @close="isEditing = false"
+      @update="updateTodo"
+    />
   </div>
 </template>
 
+
 <style scoped>
-.category-wrapper {
-  display: inline-flex;
-  gap: 5px;
-
-  margin-left: auto;
-  margin-right: auto;
-
-  /* Prevent shrinking and allow wrapping to stay horizontal */
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.checkbox {
-  cursor: pointer;
-}
-
-.todo-container {
+/* ROW PANEL */
+.todo-row-panel {
   display: grid;
   grid-template-columns: .5fr 2fr 4fr 1fr 1fr 1fr;
-  gap: 10px;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  background: rgba(15,15,15,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
-.grid-item-field {
+/* GRID CELLS */
+.grid {
   display: flex;
-  padding: 5px;
-  justify-content: center;
   align-items: center;
-  /* flex-wrap: wrap; */
-  gap: 5px;
-  outline: 1px solid white;
-  background-color: rgba(255, 255, 255, 0.15);
-  max-height: 26px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  justify-content: center;
+  padding: 0.25rem;
+  font-size: 0.75rem;
   white-space: nowrap;
+  overflow: hidden;
+}
 
+/* Completion */
+.checkbox {
+  cursor: pointer;
+  transform: scale(0.9);
+}
+
+/* Categories */
+.categories {
+  justify-content: flex-start;
+  overflow-x: auto;
   scrollbar-width: none;
 }
 
-/* .grid-item-field:not(:first-of-type):not(:last-of-type) { */
-.grid-item-field:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(5)):not(:last-of-type) {
-  border: 1px solid #ccc;
+.category-wrapper {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
-.grid-item-field.actions {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  cursor: pointer;
-}
-
-.grid-item-field.actions button {
-  /* padding: .25em; */
-  background: none;
-  color: white;
-  border: 1px solid white;
-  cursor: pointer;
-}
-
-.grid-item-field.actions button:hover {
-  padding: .25em;
-  background: none;
-  color: black;
-  background-color: white;
-  border: 1px solid black;
-  cursor: pointer;
-}
-
-.completion {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-}
-
-.categories {
-  display: flex;
-  justify-content: flex-start;
-  scroll-behavior: smooth;
-  align-items: center;
-  flex: 2;
-  gap: 5px;
-}
-
-.priority {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-}
-
+/* Content */
 .content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  flex: 5;
+  justify-content: flex-start;
 }
 
-.author {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-}
-
-.actions {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex: 1;
-}
-
-.actions .bx {
+.todo-body {
   cursor: pointer;
+  transition:
+  opacity 0.25s ease,
+  transform 0.25s ease;
 }
 
-.actions .disabled .bx {
+.todo-body.completed {
+  opacity: 0.4;
+  text-decoration: line-through;
+
+  transform: translateX(4px);
+}
+
+/* Author */
+.author {
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+
+/* Priority */
+.priority {
+  border: 1px solid rgba(255,255,255,0.3);
+  font-weight: bold;
+  font-size: 0.65rem;
+}
+
+.priority.low {
+  color: lime;
+  border-color: lime;
+}
+
+.priority.medium {
+  color: orange;
+  border-color: orange;
+}
+
+.priority.high {
+  color: red;
+  border-color: red;
+}
+
+/* Actions */
+.actions {
+  gap: 0.5rem;
+}
+
+.actions i {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.actions i:hover {
+  opacity: 1;
+}
+
+.actions i.disabled {
   opacity: 0.25;
   cursor: not-allowed;
 }
 
-/* Categories */
-.category {
-  /* display: flex; */
-  /* align-items: center; */
-  /* border-radius: 15px; */
-  /* padding: 2px 6px; */
-  /* margin-right: 4px; */
-  position: relative;
-  /* color: black; */
-  color: white;
-  /* background-color: #eef; */
-  border: 1px solid white;
-  padding: 2px 10px;
-  font-size: 0.8em;
-  justify-content: center;
-  border-radius: 20px;
+/* Hover */
+.todo-row-panel:hover {
+  border-color: lime;
 }
 
-.category:hover {
-  outline: 1px solid lime;
+/* -------------------------------
+   Completion Animation
+-------------------------------- */
+
+/* Base completed state */
+.todo-row-panel.completed {
+  opacity: 0.55;
 }
 
-.category-x {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  cursor: pointer;
-  border-radius: 50%;
-  background: white;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* Transition states */
+.todo-complete-enter-active,
+.todo-complete-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
-.category a {
-  min-height: 20px;
-  text-decoration: none;
-  /* color: black; */
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
+/* When toggling to completed */
+.todo-complete-enter-from {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.category a:hover {
-  cursor: pointer;
-  color: purple;
+.todo-complete-enter-to {
+  opacity: 0.55;
+  transform: translateX(6px);
 }
 
-/* Priority */
-.high {
-  background-color: red;
-  color: white;
-  font-weight: bold;
-  min-width: 30px;
-  cursor: pointer;
+/* When toggling back to incomplete */
+.todo-complete-leave-from {
+  opacity: 0.55;
+  transform: translateX(6px);
 }
 
-.medium {
-  background-color: orange;
-  color: white;
-  font-weight: bold;
-  min-width: 30px;
-  cursor: pointer;
+.todo-complete-leave-to {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.low {
-  background-color: green;
-  color: white;
-  font-weight: bold;
-  min-width: 30px;
-  cursor: pointer;
-}
 </style>

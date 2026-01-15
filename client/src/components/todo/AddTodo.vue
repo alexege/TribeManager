@@ -1,16 +1,18 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useTodoListStore } from "@/stores/todo.store";
 import { useCategoryStore } from "../../stores/category.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { useUserStore } from "../../stores/user.store.js";
-const { activeUser } = storeToRefs(useAuthStore())
+// const { activeUser } = storeToRefs(useAuthStore())
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const todoStore = useTodoListStore();
 var categoryStore = useCategoryStore();
+
+const activeUser = computed(() => authStore.activeUser);
 
 userStore.fetchUsers()
 categoryStore.allCategories
@@ -140,198 +142,203 @@ const permissionToManage = (category) => {
 
 </script>
 <template>
-  <form @submit.prevent="addItemAndClear(newTodo)" class="add-todo-form">
+  <form @submit.prevent="addItemAndClear" class="todo-panel">
 
-    <div class="container">
+  <div class="todo-row title-row">
+    <input
+      class="todo-title"
+      v-model="newTodo.title"
+      placeholder="New task…"
+    />
+    <button class="add-btn" :disabled="!newTodo.title">
+      ADD
+    </button>
+  </div>
 
-      <div class="wrapper">
-        <div class="left">
-          <input class="form-input" type="text" v-model="newTodo.title" placeholder="Title" />
-
-          <select name="priority" id="priority" v-model="newTodo.priority">
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-
-        </div>
-        <div class="bottom">
-          <select v-model="selectedOption" @keydown.tab="addTodoCategory" class="select">
-            <option value="" disabled>Category</option>
-            <option value="custom">Custom</option>
-            <option value="">None</option>
-            <option :value="category.name" v-for="category in allCategories" :key="category">{{ category.name }}
-            </option>
-          </select>
-
-          <div v-show="selectedOption === 'custom'" class="add-category">
-            <input type="text" v-model="customValue.name">
-            <button @click.prevent="addACategory">Add</button>
-          </div>
-          <div class="category-list">
-            <div class="category" v-for="category in todoCategories" :key="category._id">
-              <a>
-                <span>{{ category }}</span>
-                <span v-if="permissionToManage(category)" @click.prevent="removeCategory(category)">
-                  <i class='bx bx-x'></i>
-                </span>
-              </a>
-            </div>
-          </div>
-        </div>
-
-
-      </div>
-
-      <div class="right">
-        <!-- Custom Input / DropDown -->
-        <button class="add-button" :disabled="newTodo.title == ''">Add</button>
-      </div>
-
+  <div class="todo-row controls-row">
+    <!-- Priority -->
+    <div class="priority-group">
+      <button
+        v-for="p in ['Low','Medium','High']"
+        :key="p"
+        type="button"
+        :class="['priority-btn', p.toLowerCase(), { active: newTodo.priority === p }]"
+        @click="newTodo.priority = p"
+      >
+        {{ p }}
+      </button>
     </div>
 
+    <!-- Category Select -->
+    <select v-model="selectedOption" @change="addTodoCategory">
+      <option disabled value="">Category</option>
+      <option value="custom">+ Custom</option>
+      <option
+        v-for="category in allCategories"
+        :key="category._id"
+        :value="category.name"
+      >
+        {{ category.name }}
+      </option>
+    </select>
+  </div>
 
+  <!-- Custom Category -->
+  <div v-if="selectedOption === 'custom'" class="todo-row">
+    <input
+      class="todo-title"
+      placeholder="New category"
+      v-model="customValue.name"
+    />
+    <button class="add-btn secondary" @click.prevent="addACategory">
+      ADD
+    </button>
+  </div>
 
-  </form>
+  <!-- Category Chips -->
+  <div class="category-strip">
+    <div
+      class="category-chip"
+      v-for="category in todoCategories"
+      :key="category"
+    >
+      {{ category }}
+      <i class="bx bx-x" @click="removeCategory(category)"></i>
+    </div>
+  </div>
+
+</form>
+
 </template>
 
 <style scoped>
-.container {
-  display: flex;
-  outline: 2px solid white;
-}
-
-.select {
-  min-height: 26px;
-}
-
-.wrapper {
+.todo-panel {
+  width: 100%;
+  max-width: 720px;
+  margin: 1.5rem auto;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(15, 15, 15, 0.85);
+  border: 1px solid rgba(255,255,255,0.15);
   display: flex;
   flex-direction: column;
-  flex: 6;
-  background-color: rgba(255, 255, 255, 0.15);
+  gap: 0.75rem;
 }
 
-.left {
+/* Rows */
+.todo-row {
   display: flex;
+  gap: 0.5rem;
 }
 
-.right {
-  display: flex;
+/* Title Row */
+.title-row {
+  align-items: stretch;
+}
+
+.todo-title {
   flex: 1;
-  justify-content: center;
-  align-items: center;
-}
-
-.add-todo-form {
-  display: flex;
-  flex-direction: column;
-  width: 80%;
-  margin: 0 auto;
-}
-
-.top {
-  display: flex;
-  flex-direction: row;
-}
-
-.middle {
-  display: flex;
-  flex-direction: row;
-}
-
-.bottom {
-  display: flex;
-  flex-direction: row;
-}
-
-form {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  /* height: 100%; */
-}
-
-.form-input {
-  width: 100%;
-  min-height: 2em;
-}
-
-.add-category {
-  display: flex;
-  flex-direction: row;
-}
-
-.category-list {
-  display: flex;
-  flex-direction: row;
-  overflow: auto;
-}
-
-/* Categories */
-.category {
-  /* display: flex; */
-  /* align-items: center; */
-  /* border-radius: 15px; */
-  /* padding: 2px 6px; */
-  /* margin-right: 4px; */
-  position: relative;
-  /* color: black; */
+  padding: 0.6rem 0.75rem;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
   color: white;
-  /* background-color: #eef; */
-  border: 1px solid white;
-  padding: 2px 10px;
-  font-size: 0.8em;
-  justify-content: center;
-  border-radius: 20px;
+  font-size: 0.9rem;
 }
 
-.category:hover {
-  outline: 1px solid lime;
+.todo-title:focus {
+  outline: none;
+  border-color: lime;
 }
 
-.category-x {
-  position: absolute;
-  top: -5px;
-  right: -5px;
+/* Buttons */
+.add-btn {
+  padding: 0 1rem;
+  background: rgba(0,255,120,0.15);
+  border: 1px solid lime;
+  color: lime;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 50%;
-  background: white;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
-.category a {
-  min-height: 20px;
-  text-decoration: none;
-  /* color: black; */
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
+.add-btn.secondary {
+  border-color: cyan;
+  color: cyan;
+  background: rgba(0,255,255,0.12);
 }
 
-i {
-  padding: .10em .25em;
-  font-size: 20px;
+.add-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Controls Row */
+.controls-row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Priority */
+.priority-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.priority-btn {
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
   cursor: pointer;
-
-  display: flex;
-  justify-content: center;
+  font-size: 0.75rem;
 }
 
-i:hover {
+.priority-btn.active {
+  border-color: lime;
+  color: lime;
+}
+
+.priority-btn.high.active {
+  border-color: red;
   color: red;
 }
 
-.add-button {
-  display: flex;
-  flex: 1;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+.priority-btn.medium.active {
+  border-color: orange;
+  color: orange;
 }
+
+/* Select */
+select {
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 0.4rem;
+}
+
+/* Categories */
+.category-strip {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.category-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(255,255,255,0.25);
+  font-size: 0.7rem;
+  color: white;
+}
+
+.category-chip i {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.category-chip i:hover {
+  color: red;
+}
+
 </style>

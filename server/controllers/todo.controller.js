@@ -20,9 +20,9 @@ export const getAllTodos = async (req, res) => {
   try {
     const todos = await Todo.find()
     .sort({ createdAt: -1 })
+    .populate("categories")
     .populate("author");
     res.json(todos);
-    // .populate("categories")
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -57,166 +57,180 @@ const deleteCategory = (category) => {
 
 </script>
 <template>
-    <div v-if="show" class="modal-overlay" @click="close">
-        <div class="modal-content" @click.stop>
-            <h2 class="modal-title">Edit Todo</h2>
-            <form @submit.prevent="submitEdit">
+  <Transition name="panel-slide">
+    <div v-if="show" class="overlay" @click="close">
+      <div class="panel" @click.stop>
 
-                <div class="form-group inputs">
-                    <input type="text" v-model="localTodo.title" class="form-input" required />
-                    <select name="priority" id="priority" v-model="localTodo.priority">
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-
-                    <!-- <select name="author" id="author">
-                        <option value="">Author 1</option>
-                        <option value="">Author 2</option>
-                        <option value="">Author 3</option>
-                    </select> -->
-
-                    <!-- <select name="assignee" id="assignee">
-                        <option value="">Assignee</option>
-                    </select> -->
-                </div>
-
-                <div class="categories">
-                    <div v-for="category in localTodo.categories" :key="category._id" class="category"
-                        @mouseenter="handleMouseEnter(category._id)" @mouseleave="handleMouseLeave">
-
-                        <category :category="category" :is-editable="true" @delete-category="deleteCategory" />
-                        <!-- <a @click.prevent="$emit('category', category.name)">
-                            {{ category.name }}
-                        </a>
-                        <i class="bx bx-x category-x" v-if="hoveredCategoryId === category._id"
-                            @click="deleteCategory(category._id)" /> -->
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" @click="close" class="btn-cancel">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn-save">
-                        Update
-                    </button>
-                </div>
-            </form>
-            <i class="bx bx-x" @click.prevent="close" />
+        <div class="panel-header">
+          <span>Edit Todo</span>
+          <i class="bx bx-x close" @click="close" />
         </div>
+
+        <div class="panel-body">
+          <div class="controls">
+            <input
+              v-model="localTodo.title"
+              class="title-input"
+              placeholder="Todo name"
+            />
+
+            <select v-model="localTodo.priority" class="priority-select">
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+
+          <div class="categories">
+            <category
+              v-for="c in localTodo.categories"
+              :key="c._id"
+              :category="c"
+              :is-editable="true"
+              @delete-category="deleteCategory"
+            />
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="ghost" @click="close">Cancel</button>
+          <button class="primary" @click="submitEdit">Update</button>
+        </div>
+
+      </div>
     </div>
+  </Transition>
 </template>
+
 <style scoped>
-.bx-x {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    cursor: pointer;
+/* ───────── PANEL ANIMATION ───────── */
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-
-.inputs {
-    display: flex;
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(2px);
+/* ───────── OVERLAY ───────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 50;
 }
 
-.modal-content {
-    position: relative;
-    /* background-color: white; */
-    background-color: #1d1b31;
-    padding: 1.5rem 3.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 28rem;
-    border: 1px solid white;
+/* ───────── PANEL (MATCH TIMER WIDGET) ───────── */
+.panel {
+  width: 100%;
+  max-width: 26rem;
+  background: #111318; /* same dark base */
+  border-radius: 14px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+/* ───────── HEADER ───────── */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.form-group {
-    margin-bottom: 1rem;
+.close {
+  cursor: pointer;
+  opacity: 0.6;
 }
 
-.form-label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
+.close:hover {
+  opacity: 1;
 }
 
-.form-input {
-    width: 100%;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem 0 0 0.375rem;
-    padding: 0.5rem 0.75rem;
-    outline: none;
+/* ───────── BODY ───────── */
+.panel-body {
+  padding: 0.5rem 0.75rem;
 }
 
-.form-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 0.4rem;
+  margin-bottom: 0.75rem;
 }
 
-.form-actions {
-    display: flex;
-    /* justify-content: space-between; */
-    /* gap: 0.5rem; */
-    justify-content: center;
-    gap: 2em;
+/* INPUTS */
+.title-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.95);
+  padding: 0.45rem 0.5rem;
+  outline: none;
+  font-size: 0.85rem;
 }
 
+.title-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.priority-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+/* ───────── CATEGORIES ───────── */
 .categories {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 2;
-    flex-wrap: wrap;
-    /* outline: 1px solid rgb(28, 197, 104); */
-    gap: 5px;
-    margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-
-
-.btn-cancel {
-    padding: 0.5rem 1rem;
-    color: #fff;
-    background: #666;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+/* ───────── FOOTER ───────── */
+.panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
-.btn-cancel:hover {
-    color: #1f2937;
+button {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
 }
 
-.btn-save {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
+/* Cancel (matches timer secondary actions) */
+button.ghost {
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.btn-save:hover {
-    background-color: #1d4ed8;
+button.ghost:hover {
+  color: rgba(255, 255, 255, 0.85);
 }
+
+/* Primary (same blue accent timers use) */
+button.primary {
+  color: #3b82f6;
+}
+
+button.primary:hover {
+  color: #60a5fa;
+}
+
 </style>

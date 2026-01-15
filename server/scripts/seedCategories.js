@@ -1,7 +1,6 @@
 import Category from "../models/Category.js";
 
 const defaultCategories = [
-  { name: "All" },
   { name: "Farming" },
   { name: "Todo" },
   { name: "Planning" },
