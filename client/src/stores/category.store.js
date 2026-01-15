@@ -1,65 +1,96 @@
+
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import { ref, computed } from "vue";
+import api from "@/services/api";
+export const useCategoryStore = defineStore('category', () => {
+    // State
+    const categories = ref([{ name: "All" }]);
+    const loading = ref(false);
+    const error = ref(null);
+    const category = ref(null);
 
-const API_URL = 'http://127.0.0.1:8080/api'
+    // Helpers
+    const clearError = () => {
+        error.value = null;
+    };
 
-export const useCategoryStore = defineStore('category', {
-  state: () => ({
-    category: null,
-    categories: ['All']
-  }),
-  getters: {
-    allCategories: (state) => {
-      return state.categories
-    }
-  },
-  actions: {
-    async fetchCategories() {
-      this.categories = []
-      this.loading = true
-      try {
-        this.categories = await fetch(`${API_URL}/categories`).then((response) => response.json())
-      } catch (error) {
-        this.error = error
-      } finally {
-        this.loading = false
-      }
-    },
+    // Getters
+    const allCategories = computed(() => categories.value);
 
-    async addCategory(category) {
-      const newCategory = await axios.post(`${API_URL}/categories`, category)
-      this.categories.push(newCategory.data)
-    },
-
-    async updateCategory(updatedCategory) {
-      console.log('updatedCategory')
-      try {
-        await axios.patch(`${API_URL}/categories/${updatedCategory._id}`, updatedCategory)
-
-        let categoryToUpdateIdx = this.categories.indexOf(
-          this.categories.find((category) => category._id == updatedCategory._id)
-        )
-
-        let merged = {
-          ...this.categories[categoryToUpdateIdx],
-          ...updatedCategory
+    // Actions
+    const fetchCategories = async () => {
+        loading.value = true;
+        clearError();
+        try {
+            const { data } = await api.get("/categories");
+            categories.value = [{ name: "All" }, ...data];
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message;
+            console.log("Error fetching categories:", err);
+        } finally {
+            loading.value = false;
         }
+    };
 
-        this.categories[categoryToUpdateIdx] = merged
-      } catch (error) {
-        console.log('error:', error)
-      }
-    },
+    const addCategory = async (newCategory) => {
+        loading.value = true;
+        clearError();
+        try {
+            const { data } = await api.post("/categories", newCategory);
+            categories.value.push(data);
+            return data;
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message;
+            console.error("Error adding category:", err);
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
 
-    async deleteCategory(id) {
-      try {
-        await axios.delete(`${API_URL}/categories/${id}`).then(() => {
-          let index = this.categories.findIndex((category) => category._id == id)
-          this.categories.splice(index, 1)
-        })
-      } catch (error) {
-        console.log('error:', error)
-      }
-    }
-  }
+    const updateCategory = async (updatedCategory) => {
+        loading.value = true;
+        clearError();
+        try {
+            const { data } = await api.put(`/categories/${updatedCategory._id}`, updatedCategory);
+            const idx = categories.value.findIndex((c) => c._id === updatedCategory._id);
+            if (idx !== -1) {
+                categories.value[idx] = { ...categories.value[idx], ...data };
+            }
+            return data;
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message;
+            console.error("Error updating category:", err);
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    const deleteCategory = async (_id) => {
+        loading.value = true;
+        clearError();
+        try {
+            await api.delete(`/categories/${_id}`);
+            categories.value = categories.value.filter((c) => c._id !== _id);
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message;
+            console.error("Error deleting category:", err);
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    return {
+        categories,
+        category,
+        loading,
+        error,
+        allCategories,
+        fetchCategories,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+    };
 })

@@ -2,11 +2,13 @@
 import { ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useTodoListStore } from "@/stores/todo.store";
-import { useUserStore } from "@/stores/user.store";
 import { useCategoryStore } from "../../stores/category.store.js";
+import { useAuthStore } from "../../stores/auth.store.js";
+import { useUserStore } from "../../stores/user.store.js";
 
-const todoStore = useTodoListStore();
+const authStore = useAuthStore();
 const userStore = useUserStore();
+const todoStore = useTodoListStore();
 var categoryStore = useCategoryStore();
 
 userStore.fetchUsers()
@@ -37,7 +39,8 @@ const addItemAndClear = () => {
     categories: categories,
     priority: newTodo.value.priority,
     completed: newTodo.value.completed,
-    author: JSON.parse(localStorage.getItem('user')).id || newTodo.value.author,
+    author: authStore.user._id || newTodo.value.author,
+    // author: JSON.parse(localStorage.getItem('user'))._id || newTodo.value.author,
   };
 
   if (newTodo.value.title) {
@@ -63,10 +66,6 @@ const customValue = ref({
   // author: JSON.parse(localStorage.getItem('user')).id || newTodo.value.author
   author: 'placeholder-author'
 })
-
-// import { useCategoryStore } from "@/stores/category.store";
-import { useAuthStore } from "@/stores/auth.store";
-// const categoryStore = useCategoryStore();
 
 const addACategory = async () => {
   if (customValue.value) {
@@ -250,7 +249,7 @@ form {
   display: flex;
   flex: 1;
   width: 100%;
-  height: 100%;
+  /* height: 100%; */
 }
 
 .form-input {

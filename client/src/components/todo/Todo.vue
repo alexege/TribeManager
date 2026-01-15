@@ -7,10 +7,12 @@ import Category from "./category.vue";
 
 const emit = defineEmits(['category'])
 const props = defineProps({ todo: Object })
+const authStore = useAuthStore()
+const activeUser = computed(() => authStore.user)
 
 // Auth Store
 import { useAuthStore } from "@/stores/auth.store";
-const { activeUser } = storeToRefs(useAuthStore())
+// const { activeUser } = storeToRefs(useAuthStore())
 
 // Todo Store
 import { useTodoListStore } from "@/stores/todo.store";
@@ -19,12 +21,16 @@ const todoStore = useTodoListStore()
 const isEditing = ref(false)
 const editItem = ref(props.todo)
 
+// const activeUser = computed(() => {
+//   return useAuthStore().activeUser
+// })
+
 const canManage = computed(() => {
-  if (!activeUser.value) return false
-  const user = activeUser.value
+  if (!activeUser) return false
+  const user = activeUser
   return (
-    user.roles.includes("ROLE_ADMIN") ||
-    user.roles.includes("ROLE_MODERATOR") ||
+    user.value.roles.includes("admin" ) ||
+    user.value.roles.includes("moderator") ||
     (props.todo.author && user.id === props.todo.author._id)
   )
 })
@@ -73,7 +79,7 @@ const handleWheel = (event) => {
     </div>
 
     <div class="author grid-item-field">
-      <template v-if="todo.author?.username">{{ todo.author.username }}</template>
+      <template v-if="todo.author?.name">{{ todo.author.name }}</template>
     </div>
 
     <div class="priority grid-item-field"

@@ -37,7 +37,7 @@ async function seedAdmin() {
       name,
       email,
       password: hashedPassword,
-      role: "admin",
+      roles: ["admin", "moderator", "user"],
       level: 105, // optional but nice for admins
       isActive: true, // explicit for clarity
     });

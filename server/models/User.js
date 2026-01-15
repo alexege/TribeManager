@@ -15,21 +15,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    role: {
-      type: String,
+    roles: {
+      type: [String],
       enum: ["user", "admin", "moderator"],
-      default: "user",
+      default: ["user"],
     },
     level: {
       type: Number,
       default: 1,
       min: 1,
-    },
-    tribeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Tribe",
-      default: null,
-    },
+    }
   },
   { timestamps: true }
 );

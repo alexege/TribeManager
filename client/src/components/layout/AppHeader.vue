@@ -27,6 +27,8 @@ const initials = computed(() => {
             <h1>Tribe Manager</h1>
         </div>
 
+        <span style="font-size:12px;">{{ user }}</span>
+
         <!-- RIGHT: Auth-aware user area -->
         <div class="right">
             <!-- Loading (no flicker) -->

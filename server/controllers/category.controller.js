@@ -1,10 +1,9 @@
-import Todo from "../models/Todo.js";
 
+import Todo from "../models/Todo.js";
 /* ================================
    Create Todo
 ================================ */
 export const createTodo = async (req, res) => {
-  console.log("req.body:", req.body);
   try {
     const todo = await Todo.create(req.body);
     res.status(201).json(todo);
@@ -12,39 +11,31 @@ export const createTodo = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
 /* ================================
    Get All Todos
 ================================ */
 export const getAllTodos = async (req, res) => {
   try {
-    const todos = await Todo.find()
-    .sort({ createdAt: -1 })
-    .populate("author");
+    const todos = await Todo.find().sort({ createdAt: -1 });
     res.json(todos);
-    // .populate("categories")
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
 /* ================================
    Get Todo by ID
 ================================ */
 export const getTodoById = async (req, res) => {
   try {
     const todo = await Todo.findById(req.params.id);
-
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
     }
-
     res.json(todo);
   } catch (err) {
     res.status(400).json({ message: "Invalid ID" });
   }
 };
-
 /* ================================
    Update Todo
 ================================ */
@@ -55,34 +46,28 @@ export const updateTodoById = async (req, res) => {
       req.body,
       { new: true }
     );
-
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
     }
-
     res.json(todo);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
-
 /* ================================
    Delete Todo
 ================================ */
 export const deleteTodo = async (req, res) => {
   try {
     const todo = await Todo.findByIdAndDelete(req.params.id);
-
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
     }
-
     res.json({ message: "Todo deleted" });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
-
 /* ================================
    Delete All Todos
 ================================ */
@@ -95,10 +80,8 @@ export const deleteAllTodos = async (_req, res) => {
   }
 };
 
-
 // const Todo = require("../models/todo.model");
 // const Category = require("../models/category.model");
-
 // exports.createTodo = async (req, res) => {
 //   //Create the new Todo Object using info from the req.body
 //   const newTodo = new Todo({
@@ -109,7 +92,6 @@ export const deleteAllTodos = async (_req, res) => {
 //     author: req.body.author,
 //     createdAt: new Date(), //This fixes the Invalid Date problem
 //   });
-
 //   if (req.body.categories) {
 //     for (const cat of req.body.categories) {
 //       let value = await Category.findOne({ name: cat }).then((cat) =>
@@ -120,7 +102,6 @@ export const deleteAllTodos = async (_req, res) => {
 //   }
 //   await res.status(200).send(newTodo);
 // };
-
 // exports.getAllTodos = (req, res) => {
 //   Todo.find()
 //     .populate("categories")
@@ -133,7 +114,6 @@ export const deleteAllTodos = async (_req, res) => {
 //       res.status(500).send({ message: error });
 //     });
 // };
-
 // exports.getTodoById = (req, res) => {
 //   //Search database for a Todo that has an _id matching the id provided in the url(id)
 //   Todo.findOne({ _id: req.params.id })
@@ -145,7 +125,6 @@ export const deleteAllTodos = async (_req, res) => {
 //       res.status(500).send({ message: error });
 //     });
 // };
-
 // exports.updateTodoById = (req, res) => {
 //   console.log("updating todo by id: ", req.body);
 //   console.log("updating todo by id: ", req.params._id);
@@ -155,7 +134,6 @@ export const deleteAllTodos = async (_req, res) => {
 //     completed: req.body.completed,
 //     priority: req.body.priority,
 //   };
-
 //   Todo.findByIdAndUpdate({ _id: req.params.id }, updateData)
 //     .then((todo) => {
 //       res.status(200).send({ todo });
@@ -164,7 +142,6 @@ export const deleteAllTodos = async (_req, res) => {
 //       res.status(500).send({ message: error });
 //     });
 // };
-
 // exports.deleteTodo = (req, res) => {
 //   Todo.deleteOne({ _id: req.params.id })
 //     .then(() => {
@@ -175,7 +152,6 @@ export const deleteAllTodos = async (_req, res) => {
 //       return;
 //     });
 // };
-
 // exports.deleteAllTodos = (req, res) => {
 //   Todo.deleteMany()
 //     .then(() => {

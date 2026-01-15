@@ -53,7 +53,7 @@ const toggleSort = (header) => {
 
 const sortedTodosIncomplete = computed(() => {
   let list = category.value
-    ? todoStore.getInCompleteTodosByCategory(category.value)
+    ? todoStore.getIncompleteTodosByCategory(category.value)
     : incompleteTodos.value
 
   if (!sortBy.value) return list
@@ -136,7 +136,7 @@ const filteredTodosComplete = computed(() =>
 );
 
 const filteredTodosIncomplete = computed(() =>
-  category.value ? todoStore.getInCompleteTodosByCategory(category.value) : incompleteTodos.value
+  category.value ? todoStore.getIncompleteTodosByCategory(category.value) : incompleteTodos.value
 );
 
 // Auth Store
