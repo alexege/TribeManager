@@ -82,6 +82,21 @@ export const useCategoryStore = defineStore('category', () => {
         }
     };
 
+    const deleteAllCategories = async () => {
+      loading.value = true;
+      clearError();
+      try {
+        await api.delete("/categories");
+        categories.value = [{ name: "All" }];
+      } catch (err) {
+        error.value = err.response?.data?.message || err.message;
+        throw err;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+
     return {
         categories,
         category,
@@ -92,5 +107,6 @@ export const useCategoryStore = defineStore('category', () => {
         addCategory,
         updateCategory,
         deleteCategory,
+        deleteAllCategories
     };
 })

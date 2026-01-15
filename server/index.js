@@ -10,6 +10,11 @@ import playerRoutes from "./routes/player.routes.js";
 import mapRoutes from "./routes/map.routes.js";
 import pointRoutes from "./routes/point.routes.js";
 import todoRoutes from "./routes/todo.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+
+// Seed functions
+import { seedCategories } from "./scripts/seedCategories.js";
+import { seedAdmin } from "./scripts/seedAdminRev.js";
 
 dotenv.config();
 const app = express();
@@ -34,6 +39,7 @@ app.use("/api/players", playerRoutes);
 app.use("/api/maps", mapRoutes);
 app.use("/api/points", pointRoutes);
 app.use("/api/todos", todoRoutes);
+app.use("/api/categories", categoryRoutes);
 
 const PORT = process.env.PORT || 3000;
 
@@ -43,8 +49,12 @@ app.get("/", (req, res) => {
 
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("MongoDB connected");
+
+    await seedAdmin();
+    await seedCategories();
+
     app.listen(PORT, () =>
       console.log(`Server running on http://localhost:${PORT}`)
     );

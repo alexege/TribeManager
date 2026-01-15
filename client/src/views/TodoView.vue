@@ -156,7 +156,6 @@ const hasPermission = (category) => {
 const activeCategoryFilter = ref('All')
 const activeCategory = (cat) => {
   if (activeCategoryFilter.value === cat) {
-    console.log("is equal");
     activeCategoryFilter.value = 'All';
     category.value = 'All';
   } else {
