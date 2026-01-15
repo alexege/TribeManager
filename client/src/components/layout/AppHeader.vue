@@ -6,11 +6,11 @@ const auth = useAuthStore()
 
 const isLoading = computed(() => auth.isLoading)
 const isAuthed = computed(() => auth.isAuthenticated)
-const user = computed(() => auth.user)
+const activeUser = computed(() => auth.activeUser)
 
 const initials = computed(() => {
-    if (!user.value?.username) return '?'
-    return user.value.username
+    if (!activeUser.value?.username) return '?'
+    return activeUser.value.username
         .split(' ')
         .map(w => w[0])
         .join('')
@@ -27,7 +27,7 @@ const initials = computed(() => {
             <h1>Tribe Manager</h1>
         </div>
 
-        <span style="font-size:12px;">{{ user }}</span>
+        <span style="font-size:12px;">{{ activeUser }}</span>
 
         <!-- RIGHT: Auth-aware user area -->
         <div class="right">
@@ -46,13 +46,13 @@ const initials = computed(() => {
             <!-- Logged in -->
             <template v-else>
                 <div class="user-chip">
-                    <img v-if="user?.avatarUrl" :src="user.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
+                    <img v-if="activeUser?.avatarUrl" :src="activeUser.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
                     <div v-else class="avatar fallback">
                         {{ initials }}
                     </div>
 
                     <span class="username">
-                        {{ user?.name || user?.username }}
+                        {{ activeUser?.name || activeUser?.username }}
                     </span>
                 </div>
 
