@@ -330,6 +330,11 @@ const activeCategory = (cat) => {
   border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 
+.grid-header > :nth-child(2),
+.grid-header > :nth-child(3) {
+  text-align: left;
+}
+
 .grid-header-item {
   text-align: center;
   font-size: 0.7rem;

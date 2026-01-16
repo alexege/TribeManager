@@ -21,7 +21,7 @@ const error = ref(null);
 // ─────────────
 // STATIC BASE MAPS & CATEGORIES
 // ─────────────
-const baseMaps = [
+const baseMaps = ref([
     { name: "The Island", img: "../../src/assets/images/maps/TheIsland.png" },
     { name: "The Center", img: "../../src/assets/images/maps/TheCenterMap.jpg" },
     { name: "Scorched Earth", img: "../../src/assets/images/maps/ScorchedEarth.png" },
@@ -31,7 +31,7 @@ const baseMaps = [
     { name: "Ragnarok", img: "../../src/assets/images/maps/Ragnarok.png" },
     { name: "Valguero", img: "../../src/assets/images/maps/Valguero.png" },
     { name: "LostColony", img: "../../src/assets/images/maps/LostColony.png" },
-];
+]);
 const categories = [
     { name: "Raid-Target", icon: "colorize" },
     { name: "Base-Spot", icon: "colorize" },
@@ -128,7 +128,7 @@ const createMapInstance = async ({ baseMapName, title }) => {
     clearErrors();
     loading.value = true;
     try {
-        const baseMap = baseMaps.find((m) => m.name === baseMapName);
+        const baseMap = baseMaps.value.find((m) => m.name === baseMapName);
         if (!baseMap) throw new Error(`Base map "${baseMapName}" not found`);
         const { data: newMap } = await api.post("/maps", {
             baseMapName,
