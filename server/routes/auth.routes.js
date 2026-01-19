@@ -122,7 +122,7 @@ router.post("/refresh", async (req, res) => {
 // GET CURRENT USER
 router.get("/me", requireAuth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const user = await User.findById(req.user.userId).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

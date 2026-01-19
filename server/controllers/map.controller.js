@@ -6,7 +6,7 @@ import Map from "../models/Map.js";
 export const getMaps = async (req, res) => {
   try {
     const maps = await Map.find({
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     }).sort({ createdAt: -1 });
 
     res.json(maps);
@@ -31,7 +31,7 @@ export const createMap = async (req, res) => {
       baseMapName,
       title,
       img,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     res.status(201).json(map);
@@ -49,7 +49,7 @@ export const updateMap = async (req, res) => {
     const map = await Map.findOneAndUpdate(
       {
         _id: req.params.id,
-        ownerId: req.userId,
+        ownerId: req.user.userId,
       },
       req.body,
       { new: true }
@@ -73,7 +73,7 @@ export const deleteMap = async (req, res) => {
   try {
     const map = await Map.findOneAndDelete({
       _id: req.params.id,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     if (!map) {

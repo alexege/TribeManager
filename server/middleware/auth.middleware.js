@@ -18,9 +18,12 @@ export const requireAuth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("✅ Token decoded:", decoded);
-    req.userId = decoded.userId;
-    req.role = decoded.role; // Should Delete this?
+
+    req.user = {
+      userId: decoded.userId,
+      role: decoded.role,
+    }
+
     next();
   } catch (err) {
     console.log("Token verification failed:", err.message);
@@ -31,7 +34,7 @@ export const requireAuth = (req, res, next) => {
 // Role Guard
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
-    if (!allowedRoles.includes(req.role)) {
+    if (!req.user ||!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ message: "Forbidden" });
     }
     next();

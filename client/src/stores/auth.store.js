@@ -4,6 +4,8 @@ import { ref, computed } from "vue";
 import api from "../services/api";
 import router from "../router";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 export const useAuthStore = defineStore("auth", () => {
   // ─────────────
   // STATE
@@ -28,6 +30,18 @@ export const useAuthStore = defineStore("auth", () => {
   // ─────────────
   // ACTIONS
   // ─────────────
+  const normalizeUser = (user) => {
+    if (!user) return null;
+
+    if (user.profilePicture) {
+      user.avatarUrl = `${API_BASE}${user.profilePicture}`;
+    } else {
+      user.avatarUrl = null;
+    }
+
+    return user;
+  };
+
   const checkAuth = async () => {
     if (authReady.value) return;
 
@@ -41,7 +55,7 @@ export const useAuthStore = defineStore("auth", () => {
 
       // Fetch activeUser
       const res = await api.get("/auth/me");
-      activeUser.value = res.data;
+      activeUser.value = normalizeUser(res.data);
     } catch {
       await logout(false);
     } finally {
@@ -61,7 +75,7 @@ export const useAuthStore = defineStore("auth", () => {
 
       // 2️⃣ Fetch activeUser
       const res = await api.get("/auth/me");
-      activeUser.value = res.data;
+      activeUser.value = normalizeUser(res.data);
     } catch {
       await logout(false);
     } finally {
@@ -81,7 +95,7 @@ export const useAuthStore = defineStore("auth", () => {
 
       // 2️⃣ Fetch activeUser
       const me = await api.get("/auth/me");
-      activeUser.value = me.data;
+      activeUser.value = normalizeUser(me.data);
 
       router.push("/dashboard");
     } catch (err) {
@@ -122,6 +136,12 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const updateAvatar = (avatarUrl) => {
+  if (activeUser.value) {
+    activeUser.value.avatarUrl = avatarUrl;
+  }
+  };
+
   return {
     // state
     token,
@@ -141,5 +161,6 @@ export const useAuthStore = defineStore("auth", () => {
     login,
     register,
     logout,
+    updateAvatar
   };
 });

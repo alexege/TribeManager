@@ -5,12 +5,13 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import tribeRoutes from "./routes/tribe.routes.js";
-import userRoutes from "./routes/user.routes.js";
 import playerRoutes from "./routes/player.routes.js";
 import mapRoutes from "./routes/map.routes.js";
 import pointRoutes from "./routes/point.routes.js";
 import todoRoutes from "./routes/todo.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
+import userRoutes from "./routes/profile.routes.js";
+import path from "path";
 
 // Seed functions
 import { seedCategories } from "./scripts/seedCategories.js";
@@ -40,6 +41,11 @@ app.use("/api/maps", mapRoutes);
 app.use("/api/points", pointRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/profile", userRoutes);
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
+);
 
 const PORT = process.env.PORT || 3000;
 

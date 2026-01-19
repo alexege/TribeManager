@@ -406,8 +406,10 @@ const closeAllMenus = () =>
         <div v-for="(tribe, i) in tribes" :key="tribe._id" class="tribe-collapsible"
             :class="{ 'menu-active': menuOpen[tribe._id] }">
             <!-- Collapsible Header with Menu -->
-            <div class="header" :class="{ 'header-open': openTribes[tribe._id] }">
-                <!-- :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }" -->
+            <div class="header" :class="{ 'header-open': openTribes[tribe._id] }"
+            :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }"
+
+            >
                 <!-- <div class="header"> -->
                 <div class="header-title" @click="handleHeaderClick(tribe._id)">
                     <template v-if="editingTribe[tribe._id]">

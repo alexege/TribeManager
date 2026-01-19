@@ -8,7 +8,7 @@ export const getPointsByMap = async (req, res) => {
   try {
     const map = await Map.findOne({
       _id: req.params.mapId,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     if (!map) {
@@ -34,7 +34,7 @@ export const createPoint = async (req, res) => {
     console.log("📍 Create point request:");
     console.log("================Body================:", req.body);
     console.log("Map ID:", req.params.mapId);
-    console.log("User ID:", req.userId);
+    console.log("User ID:", req.user.userId);
 
     const { category, x, y, pX, pY, name, description, color, icon, size } = req.body;
 
@@ -44,12 +44,12 @@ export const createPoint = async (req, res) => {
     }
 
     console.log("mapId:", req.params.mapId);
-    console.log("ownerId:", req.userId);
+    console.log("ownerId:", req.user.userId);
 
     // Verify map ownership
     const map = await Map.findOne({
       _id: req.params.mapId,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     console.log("map is: ", map);
@@ -71,7 +71,7 @@ export const createPoint = async (req, res) => {
       color: color || "#ff0000",
       icon: icon || category,
       size: size || 10,
-      createdBy: req.userId,
+      createdBy: req.user.userId,
     });
 
     res.status(201).json(point);
@@ -89,7 +89,7 @@ export const updatePoint = async (req, res) => {
     console.log("📝 Update point request:");
     console.log("Point ID:", req.params.id);
     console.log("Body:", req.body);
-    console.log("User ID:", req.userId);
+    console.log("User ID:", req.user.userId);
 
     const point = await Point.findById(req.params.id);
 
@@ -100,7 +100,7 @@ export const updatePoint = async (req, res) => {
     // Verify map ownership
     const map = await Map.findOne({
       _id: point.mapId,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     if (!map) {
@@ -137,7 +137,7 @@ export const deletePoint = async (req, res) => {
   try {
     console.log("🗑️ Delete point request:");
     console.log("Point ID:", req.params.id);
-    console.log("User ID:", req.userId);
+    console.log("User ID:", req.user.userId);
 
     const point = await Point.findById(req.params.id);
 
@@ -148,7 +148,7 @@ export const deletePoint = async (req, res) => {
     // Verify map ownership
     const map = await Map.findOne({
       _id: point.mapId,
-      ownerId: req.userId,
+      ownerId: req.user.userId,
     });
 
     if (!map) {

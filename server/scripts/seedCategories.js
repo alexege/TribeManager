@@ -11,7 +11,7 @@ const defaultCategories = [
 export const seedCategories = async () => {
   try {
 
-    const existingCategories = await Category.findOne({ name: 'All' });
+    const existingCategories = await Category.findOne();
     if (existingCategories) {
         console.log("ℹ️ Categories already exist, skipping seed.")
         return;

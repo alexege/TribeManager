@@ -87,7 +87,7 @@ const handleCategoryDrop = (e, targetCategory) => {
 
 <template>
   <div class="kanban-board">
-    <div class="board-header">
+    <!-- <div class="board-header">
       <h1>Timer Kanban Board</h1>
       <div class="header-actions">
         <button @click="handleSyncToDatabase" class="sync-button">
@@ -97,7 +97,7 @@ const handleCategoryDrop = (e, targetCategory) => {
           🗑️ Clear All
         </button>
       </div>
-    </div>
+    </div> -->
 
     <!-- Empty state -->
     <div v-if="sortedCategories.length === 0" class="empty-state">
@@ -185,7 +185,7 @@ const handleCategoryDrop = (e, targetCategory) => {
   padding: 10px;
 }
 
-.board-header {
+/* .board-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -238,7 +238,7 @@ const handleCategoryDrop = (e, targetCategory) => {
 .clear-button:hover {
   background: rgba(255, 50, 50, 0.25);
   transform: translateY(-1px);
-}
+} */
 
 /* Empty State */
 .empty-state {
@@ -469,6 +469,7 @@ const handleCategoryDrop = (e, targetCategory) => {
   font-size: 16px;
   margin-bottom: 20px;
   outline: none;
+  box-sizing: border-box;
 }
 
 .modal-input:focus {

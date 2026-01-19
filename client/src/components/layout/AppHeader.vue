@@ -43,20 +43,22 @@ const initials = computed(() => {
 
             <!-- Logged in -->
             <template v-else>
-                <div class="user-chip">
-                    <img v-if="activeUser?.avatarUrl" :src="activeUser.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
-                    <div v-else class="avatar fallback">
-                        {{ initials }}
+                <RouterLink to="/dashboard" class="link ">
+                    <div class="user-chip">
+                        <img v-if="activeUser?.avatarUrl" :src="activeUser.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
+                        <div v-else class="avatar fallback">
+                            {{ initials }}
+                        </div>
+
+                        <span class="username">
+                            {{ activeUser?.name || activeUser?.username }}
+                        </span>
                     </div>
+                </RouterLink>
 
-                    <span class="username">
-                        {{ activeUser?.name || activeUser?.username }}
-                    </span>
-                </div>
-
-                <button class="logout" @click="auth.logout()" :disabled="isLoading">
-                    Logout
-                </button>
+                    <button class="logout" @click="auth.logout()" :disabled="isLoading">
+                        Logout
+                    </button>
             </template>
         </div>
     </header>
@@ -100,14 +102,15 @@ h1 {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.3rem 0.6rem;
+    /* padding: 0.3rem 0.6rem; */
+    padding: 0.15rem 0.3rem;
     border-radius: 999px;
     background: hsl(210, 70%, 50%);
 }
 
 .avatar {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
 }

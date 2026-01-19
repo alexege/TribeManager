@@ -25,25 +25,25 @@ export const register = async (req, res) => {
     });
 
     // Auto login
-    // const token = jwt.sign(
-    //   { id: user._id },
-    //   JWT_SECRET,
-    //   { expiresIn: "7d" }
-    // );
+    const token = jwt.sign(
+      { id: user._id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    // res.cookie("token", token, {
-    //   httpOnly: true,
-    //   sameSite: "lax",
-    //   secure: false,
-    //   maxAge: 7 * 24 * 60 * 60 * 1000,
-    // });
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
-    // res.status(201).json({
-    //   user: {
-    //     id: user._id,
-    //     email: user.email,
-    //   },
-    // });
+    res.status(201).json({
+      user: {
+        id: user._id,
+        email: user.email,
+      },
+    });
 
     res.status(201).json({ message: "User created" });
   } catch (err) {

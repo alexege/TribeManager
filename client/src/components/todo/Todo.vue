@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { storeToRefs } from 'pinia'
 
 import ModalEditTodo from "../modals/todo/ModalEditTodo.vue";
-import Category from "./category.vue";
+import Category from "./Category.vue";
 
 const emit = defineEmits(['category'])
 const props = defineProps({ todo: Object })
@@ -138,7 +138,8 @@ const handleWheel = (event) => {
   grid-template-columns: .5fr 2fr 4fr 1fr 1fr 1fr;
   gap: 0.5rem;
   padding: 0.35rem;
-  background: rgba(15,15,15,0.75);
+  /* background: rgba(15,15,15,0.75); */
+  background: rgba(105,105,105,0.35);
   border: 1px solid rgba(255,255,255,0.15);
 }
 
