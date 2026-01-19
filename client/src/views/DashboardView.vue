@@ -145,6 +145,7 @@ const readableRoles = computed(() => {
   padding: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  outline: 1px solid var(--primary-color);
 }
 
 .profile-header {
@@ -228,7 +229,7 @@ const readableRoles = computed(() => {
 /* Details */
 .profile-details {
   margin-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--primary-color);
   padding-top: 1.5rem;
 }
 

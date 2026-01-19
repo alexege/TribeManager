@@ -105,7 +105,20 @@ h1 {
     /* padding: 0.3rem 0.6rem; */
     padding: 0.15rem 0.3rem;
     border-radius: 999px;
-    background: hsl(210, 70%, 50%);
+    background: var(--primary-color);
+}
+
+.user-chip:hover {
+    background: white;
+    color: black;
+}
+
+.user-chip .username {
+    color: var(--text-primary);
+}
+
+.user-chip:hover .username {
+    color: black;
 }
 
 .avatar {
@@ -171,12 +184,12 @@ h1 {
 /* ---------------- LOGOUT BUTTON ---------------- */
 
 .logout {
-    padding: 0.35rem 0.65rem;
+    padding: 0.65rem 0.65rem;
     border-radius: 999px;
     font-size: 0.8rem;
     cursor: pointer;
     background: transparent;
-    border: 1px solid hsl(210, 30%, 80%);
+    border: none;
     color: white;
     background: var(--orange);
     transition: background 0.15s ease, opacity 0.15s ease;

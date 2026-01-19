@@ -407,9 +407,8 @@ const closeAllMenus = () =>
             :class="{ 'menu-active': menuOpen[tribe._id] }">
             <!-- Collapsible Header with Menu -->
             <div class="header" :class="{ 'header-open': openTribes[tribe._id] }"
-            :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }"
-
             >
+            <!-- :style="{ backgroundColor: `hsl(${(i * 37) % 360}, 70%, 60%)` }" -->
                 <!-- <div class="header"> -->
                 <div class="header-title" @click="handleHeaderClick(tribe._id)">
                     <template v-if="editingTribe[tribe._id]">
@@ -584,18 +583,46 @@ const closeAllMenus = () =>
 </template>
 
 <style scoped>
+input,
+select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--orange);
+  outline: none;
+}
+
 .page-title {
     text-align: center;
 }
 
 .global-players-header {
-    display: flex;
+    /* display: flex;
     justify-content: space-between;
     background: var(--orange);
     padding: 5px 10px;
     cursor: pointer;
     margin-bottom: .5em;
-    font-weight: bold;
+    font-weight: bold; */
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  margin-bottom: .5em;
+  cursor: pointer;
+}
+
+.global-players-header:hover {
+    filter: brightness(0.95);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 input {
@@ -688,7 +715,7 @@ input {
 }
 
 .tribe-collapsible>.header {
-    background: var(--orange);
+    /* background: var(--orange); */
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom-left-radius: 6px;
@@ -702,16 +729,19 @@ input {
 
 .header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    /* padding: 10px 12px; */
+    justify-content: space-between;
+
     /* padding: 6px 8px; */
     padding: 2px 4px;
+
     font-weight: bold;
     cursor: pointer;
     user-select: none;
     /* background: rgba(0, 0, 0, 0.05); */
-    background: rgba(0, 0, 0, 0.918);
+    /* background: rgba(0, 0, 0, 0.918); */
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .header.header-open {
@@ -721,6 +751,7 @@ input {
 
 .header:hover {
     filter: brightness(0.95);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .header-title {
@@ -803,8 +834,15 @@ input {
 }
 
 .content {
-    padding: 12px;
-    background-color: var(--glass-dark);
+    /* padding: 12px;
+    background-color: var(--glass-dark); */
+
+      margin-top: 6px;
+  padding: 10px;
+
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .search-bar {
@@ -838,11 +876,15 @@ input {
 }
 
 .cell {
-    color: var(--text-primary);
-    padding: 6px 8px;
-    border-bottom: 1px solid #eee;
-    word-break: break-word;
-    background-color: var(--border-subtle);
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+}
+
+.player-table-grid > .cell:hover,
+.all-players-table-grid > .cell:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .cell.actions {
@@ -852,17 +894,18 @@ input {
 }
 
 .cell.actions button {
-    background: #e74c3c;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 2px 6px;
-    cursor: pointer;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  cursor: pointer;
 }
 
 .cell.actions button:hover {
-    background: #c0392b;
+  color: var(--orange);
 }
+
 
 .add-player-form {
     margin-top: 1em;
@@ -897,6 +940,18 @@ input {
 
 .collapse-enter-active,
 .collapse-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.collapse-enter-from,
+.collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+
+/* .collapse-enter-active,
+.collapse-leave-active {
     transition: all 0.3s ease;
 }
 
@@ -905,7 +960,7 @@ input {
     max-height: 0;
     opacity: 0;
     overflow: hidden;
-}
+} */
 
 .collapse-enter-to,
 .collapse-leave-from {

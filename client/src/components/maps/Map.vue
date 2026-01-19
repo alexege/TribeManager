@@ -395,8 +395,8 @@ const confirmDeleteMap = (mapId) => {
                   :key="p._id"
                   :point="p"
                   :hoverPoint="hoverPoint?.name"
-                  @click="selectPoint($event, p)"
-                  @dblclick="editPoint(p)"
+                  @click.stop="selectPoint($event, p)"
+                  @dblclick.stop="editPoint(p)"
                   :style="{
                     left: p.x + 'px',
                     top: p.y + 'px',

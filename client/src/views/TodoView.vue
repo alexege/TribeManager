@@ -210,7 +210,7 @@ const activeCategory = (cat) => {
           @click="header.key && toggleSort(header.key)"
         >
           {{ header.label }}
-          <span v-if="sortBy === header.key">
+          <span v-if="sortBy === header.key && header.key">
             {{ sortDir === 1 ? '▲' : '▼' }}
           </span>
         </div>
@@ -240,7 +240,7 @@ const activeCategory = (cat) => {
           @click="header.key && toggleSort(header.key)"
         >
           {{ header.label }}
-          <span v-if="sortBy === header.key">
+          <span v-if="sortBy === header.key && header.key">
             {{ sortDir === 1 ? '▲' : '▼' }}
           </span>
         </div>
