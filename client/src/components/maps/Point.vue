@@ -1,55 +1,107 @@
 <script setup>
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed } from 'vue'
 
-const props = defineProps(['point', 'hoverPoint']);
+const props = defineProps(['point', 'hoverPoint'])
 
-const isToolTipVisible = ref(false);
-const tooltipPosition = ref({ top: 0, left: 0 });
+const isToolTipVisible = ref(false)
+const tooltipPosition = ref({ top: 0, left: 0 })
 
+/* -------------------------
+   ICON REGISTRY
+------------------------- */
+const ICON_MAP = {
+  transmitter: new URL('@/assets/images/icons/Transmitter.png', import.meta.url).href,
+  obelisk: new URL('@/assets/images/icons/Obelisk.png', import.meta.url).href,
+  waypoint: new URL('@/assets/images/icons/Waypoint.png', import.meta.url).href,
+  artifact: new URL('@/assets/images/icons/Artifact.png', import.meta.url).href,
+}
+
+/* -------------------------
+   ICON RESOLUTION
+------------------------- */
+const categoryKey = computed(() =>
+  props.point.icon?.toLowerCase() ||
+  props.point.category?.toLowerCase()
+)
+
+const iconSrc = computed(() => ICON_MAP[categoryKey.value] || null)
+
+/* -------------------------
+   AUTO SCALE
+------------------------- */
+const iconSize = computed(() => {
+  const base = props.point.size || 24
+  const zoom = props.point.zoom || 1
+  return Math.max(16, base * zoom)
+})
+
+/* -------------------------
+   TOOLTIP
+------------------------- */
 const showToolTip = async () => {
-    isToolTipVisible.value = true;
-    await nextTick(); // Wait for the DOM to update
-    const tooltip = document.querySelector('.tooltip');
-    const container = document.querySelector('.tooltip-container');
-    if (tooltip && container) {
-        const tooltipRect = tooltip.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-        let top = -tooltipRect.height - 5; // Position above the target
-        let left = (containerRect.width - tooltipRect.width) / 2; // Center the tooltip
-        // Adjust position if the tooltip goes off the screen
-        if (left < 0) {
-            left = 0; // Prevent overflow on the left
-        } else if (left + tooltipRect.width > containerRect.width) {
-            left = containerRect.width - tooltipRect.width; // Prevent overflow on the right
-        }
-        // Set final position
-        tooltipPosition.value = { top, left };
-    }
-};
+  isToolTipVisible.value = true
+  await nextTick()
+
+  const tooltip = document.querySelector('.tooltip')
+  const container = document.querySelector('.tooltip-container')
+
+  if (!tooltip || !container) return
+
+  const tooltipRect = tooltip.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+
+  let top = -tooltipRect.height - 6
+  let left = (containerRect.width - tooltipRect.width) / 2
+
+  left = Math.max(0, Math.min(left, containerRect.width - tooltipRect.width))
+  tooltipPosition.value = { top, left }
+}
 
 const hideToolTip = () => {
-    isToolTipVisible.value = false;
-};
+  isToolTipVisible.value = false
+}
 </script>
+
 <template>
-    <div>
-        <div class="tooltip-container" @mouseenter="showToolTip" @mouseleave="hideToolTip">
-            <div class="tooltip-target">
-                <div class="point" :class="{
-                    isHovered: point.name === hoverPoint
-                }"
-                    :style="[{ 'backgroundColor': point.color }, { width: point.size + 'px' }, { height: point.size + 'px' }]"
-                    >
-                </div>
-            </div>
-            <div class="tooltip" v-if="isToolTipVisible"
-                :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
-                <span>{{ point.name }} - {{ point.icon }}</span>
-                <div>Lon: {{ point.pX }}, Lat: {{ point.pY }}</div>
-            </div>
-        </div>
+  <div class="tooltip-container"
+       @mouseenter="showToolTip"
+       @mouseleave="hideToolTip">
+
+    <div class="tooltip-target">
+
+      <!-- ICON MARKER -->
+      <img
+        v-if="iconSrc"
+        :src="iconSrc"
+        class="marker-icon"
+        :class="{ isHovered: point.name === hoverPoint }"
+        :style="{ width: iconSize + 'px', height: iconSize + 'px' }"
+      />
+
+      <!-- FALLBACK DOT -->
+      <div
+        v-else
+        class="point"
+        :class="{ isHovered: point.name === hoverPoint }"
+        :style="{
+          backgroundColor: point.color,
+          width: point.size + 'px',
+          height: point.size + 'px'
+        }"
+      ></div>
+
     </div>
+
+    <div v-if="isToolTipVisible"
+         class="tooltip"
+         :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
+      <strong>{{ point.name }}</strong>
+      <div>{{ point.icon }}</div>
+      <div>Lon: {{ point.pX }}, Lat: {{ point.pY }}</div>
+    </div>
+  </div>
 </template>
+
 <style scoped>
 .isHovered {
     outline: 2px solid yellow !important;
@@ -90,6 +142,34 @@ const hideToolTip = () => {
     line-height: 10px;
     font-size: .5em;
 }
+
+
+
+.marker-icon {
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
+}
+
+.point {
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  outline: 1px solid black;
+  cursor: pointer;
+}
+
+.isHovered {
+  outline: 2px solid yellow !important;
+  box-shadow:
+    0 0 25px rgba(255, 255, 0, 0.9),
+    0 0 40px rgba(255, 255, 0, 0.7);
+}
+
+
+
+
 </style>
 
 
