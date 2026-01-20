@@ -1,6 +1,7 @@
 // stores/timer.store.js
 import { defineStore } from 'pinia'
 import { nanoid } from 'nanoid'
+import socket from '@/services/socket'
 
 const STORAGE_KEY = 'timer-kanban-state'
 
@@ -45,6 +46,7 @@ export const useTimerStore = defineStore('timer', {
             isDragging: false,
             draggedWidgetId: null,
             draggedFromCategoryId: null,
+            realtimeReady: false,
         }
     },
 
@@ -74,6 +76,48 @@ export const useTimerStore = defineStore('timer', {
     },
 
     actions: {
+        /* ========== SYNC / REALTIME HELPERS ========== */
+
+        async persistState({ broadcast = true } = {}) {
+            // Keep local backup
+            saveToStorage(this.$state)
+
+            // Persist to API
+            try {
+                await this.syncToDatabase()
+            } catch (error) {
+                console.error('Failed to persist timer state:', error)
+            }
+
+            // Notify other clients
+            if (broadcast && socket?.connected) {
+                socket.emit('timer:state', {
+                    categories: this.categories,
+                    widgets: this.widgets
+                })
+            }
+        },
+
+        initRealtimeListeners() {
+            if (this.realtimeReady) return
+            this.realtimeReady = true
+
+            socket.on('timer:state', (payload) => {
+                if (!payload) return
+                this.categories = payload.categories || []
+                this.widgets = payload.widgets || []
+                saveToStorage(this.$state)
+            })
+
+            socket.on('timer:update', ({ widgetId, timer }) => {
+                const widget = this.widgets.find(w => w.id === widgetId)
+                if (widget && timer) {
+                    widget.timer = { ...(widget.timer || {}), ...timer }
+                    saveToStorage(this.$state)
+                }
+            })
+        },
+
         /* ========== CATEGORY ACTIONS ========== */
 
         addCategory(name = 'New Category') {
@@ -85,7 +129,7 @@ export const useTimerStore = defineStore('timer', {
             }
 
             this.categories.push(category)
-            saveToStorage(this.$state)
+            this.persistState()
             return category
         },
 
@@ -93,7 +137,7 @@ export const useTimerStore = defineStore('timer', {
             const category = this.categories.find(c => c.id === categoryId)
             if (category) {
                 Object.assign(category, updates)
-                saveToStorage(this.$state)
+                this.persistState()
             }
         },
 
@@ -104,7 +148,7 @@ export const useTimerStore = defineStore('timer', {
             // Remove all widgets in this category
             this.widgets = this.widgets.filter(w => w.categoryId !== categoryId)
 
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         reorderCategories(newOrder) {
@@ -117,7 +161,7 @@ export const useTimerStore = defineStore('timer', {
             })
 
             this.categories.sort((a, b) => a.order - b.order)
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         /* ========== WIDGET ACTIONS ========== */
@@ -140,7 +184,7 @@ export const useTimerStore = defineStore('timer', {
             }
 
             this.widgets.push(widget)
-            saveToStorage(this.$state)
+            this.persistState()
             return widget
         },
 
@@ -163,7 +207,7 @@ export const useTimerStore = defineStore('timer', {
             }
 
             this.widgets.push(widget)
-            saveToStorage(this.$state)
+            this.persistState()
             return widget
         },
 
@@ -182,18 +226,18 @@ export const useTimerStore = defineStore('timer', {
                 w.order = index
             })
 
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         updateTimer(widgetId, timerUpdates) {
-            console.log("timerUpdate: ", widgetId, timerUpdates);
             const widget = this.widgets.find(w => w.id === widgetId)
-            console.log("widget: ", widget);
             if (widget && widget.timer) {
-                console.log("widget.timer: ", widget.timer);
-                console.log("widget.timer.name: ", widget.timer.name);
-                Object.assign(widget.timer, timerUpdates)
-                saveToStorage(this.$state)
+                widget.timer = { ...(widget.timer || {}), ...timerUpdates }
+                this.persistState()
+
+                if (socket?.connected) {
+                    socket.emit('timer:update', { widgetId, timer: widget.timer })
+                }
             }
         },
 
@@ -201,7 +245,7 @@ export const useTimerStore = defineStore('timer', {
             const widget = this.widgets.find(w => w.id === widgetId)
             if (widget) {
                 widget.name = newName
-                saveToStorage(this.$state)
+                this.persistState()
             }
         },
 
@@ -228,7 +272,7 @@ export const useTimerStore = defineStore('timer', {
                 }
             }
 
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         /* ========== PRESET ACTIONS ========== */
@@ -243,7 +287,7 @@ export const useTimerStore = defineStore('timer', {
             widget.timer.isActive = false
             widget.timer.endDateTime = null
 
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         /* ========== DRAG & DROP ACTIONS ========== */
@@ -315,14 +359,14 @@ export const useTimerStore = defineStore('timer', {
                 widget.order = newOrder
             }
 
-            saveToStorage(this.$state)
+            this.persistState()
         },
 
         updateWidgetImage(widgetId, imagePath) {
             const widget = this.widgets.find(w => w.id === widgetId)
             if (widget) {
                 widget.image = imagePath
-                saveToStorage(this.$state)
+                this.persistState()
             }
         },
 
@@ -335,6 +379,7 @@ export const useTimerStore = defineStore('timer', {
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         categories: this.categories,
                         widgets: this.widgets
@@ -354,7 +399,9 @@ export const useTimerStore = defineStore('timer', {
 
         async loadFromDatabase() {
             try {
-                const response = await fetch('/api/timer-state')
+                const response = await fetch('/api/timer-state', {
+                    credentials: 'include'
+                })
 
                 if (!response.ok) {
                     throw new Error('Failed to load from database')

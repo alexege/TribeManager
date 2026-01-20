@@ -95,7 +95,7 @@ const applyPreset = (preset) => {
         </div>
       </Transition>
 
-      <button class="save-button">💾</button>
+      <button class="save-button" @click.stop="store.persistState()">💾</button>
 
       <button
         class="preset-button"

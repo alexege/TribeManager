@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 import KanbanCategory from '@/components/timers/KanbanCategory.vue'
 
@@ -83,6 +83,15 @@ const handleCategoryDrop = (e, targetCategory) => {
 
   draggedOverCategoryId.value = null
 }
+
+onMounted(async () => {
+  store.initRealtimeListeners()
+  try {
+    await store.loadFromDatabase()
+  } catch (error) {
+    console.error('Failed to load timers from database', error)
+  }
+})
 </script>
 
 <template>

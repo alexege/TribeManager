@@ -19,34 +19,47 @@ const timerComplete = ref(false)
 const editTimerTime = ref(false)
 const countDownId = ref(null)
 
+const applyTimerState = (timer) => {
+    stopCountDown(false)
 
-onMounted(() => {
-    // Initialize from stored timer state
-    if (props.timer.isActive && props.timer.endDateTime) {
-        const remaining = new Date(props.timer.endDateTime).getTime() - Date.now()
-        if (remaining > 0) {
-            timeRemaining.value = remaining
-            const time = msToTimeFormat(remaining).split(':')
-            days.value = parseInt(time[0])
-            hours.value = parseInt(time[1])
-            minutes.value = parseInt(time[2])
-            seconds.value = parseInt(time[3])
-            initialStartValue.value = props.timer.duration || remaining
-            startCountDown()
-        } else {
-            // Timer expired while page was closed
-            timerComplete.value = true
-            percentLeft.value = 0
-        }
-    } else if (props.timer.duration) {
-        timeRemaining.value = props.timer.duration
-        const time = msToTimeFormat(props.timer.duration).split(':')
+    if (!timer) return
+
+    // Use duration when stopped
+    if (!timer.isActive || !timer.endDateTime) {
+        const duration = timer.duration ?? 0
+        timeRemaining.value = duration
+        const time = msToTimeFormat(duration).split(':')
         days.value = parseInt(time[0])
         hours.value = parseInt(time[1])
         minutes.value = parseInt(time[2])
         seconds.value = parseInt(time[3])
-        initialStartValue.value = props.timer.duration
+        initialStartValue.value = duration
+        timerActive.value = false
+        timerComplete.value = duration === 0
+        percentLeft.value = duration === 0 ? 0 : 100
+        return
     }
+
+    const remaining = new Date(timer.endDateTime).getTime() - Date.now()
+    if (remaining > 0) {
+        timeRemaining.value = remaining
+        const time = msToTimeFormat(remaining).split(':')
+        days.value = parseInt(time[0])
+        hours.value = parseInt(time[1])
+        minutes.value = parseInt(time[2])
+        seconds.value = parseInt(time[3])
+        initialStartValue.value = timer.duration || remaining
+        startCountDown()
+    } else {
+        timerComplete.value = true
+        percentLeft.value = 0
+    }
+}
+
+
+onMounted(() => {
+    // Initialize from stored timer state
+    applyTimerState(props.timer)
 })
 
 onUnmounted(() => {
@@ -54,6 +67,14 @@ onUnmounted(() => {
         clearInterval(countDownId.value)
     }
 })
+
+watch(
+    () => props.timer,
+    (newTimer) => {
+        applyTimerState(newTimer)
+    },
+    { deep: true }
+)
 
 const onStart = () => {
     if (timeRemaining.value <= 0) return
@@ -74,6 +95,11 @@ const onStart = () => {
 }
 
 const startCountDown = () => {
+    if (countDownId.value) {
+        clearInterval(countDownId.value)
+        countDownId.value = null
+    }
+
     timerActive.value = true
 
     let now = Date.now()
@@ -113,38 +139,52 @@ const startCountDown = () => {
     }, desiredDelay)
 }
 
-const stopCountDown = () => {
+const stopCountDown = (persist = true) => {
     timerActive.value = false
     if (countDownId.value) {
         clearInterval(countDownId.value)
         countDownId.value = null
     }
 
-    timerStore.updateTimer(props.widgetId, {
-        isActive: false,
-        duration: timeRemaining.value
-    })
+    if (persist) {
+        timerStore.updateTimer(props.widgetId, {
+            isActive: false,
+            duration: timeRemaining.value
+        })
+    }
 }
 
 const onPause = () => {
     stopCountDown()
 }
 
+const resolveResetDuration = () => {
+    // Prefer the last known start value, otherwise use persisted duration
+    if (initialStartValue.value && initialStartValue.value > 0) return initialStartValue.value
+    if (props.timer?.duration && props.timer.duration > 0) return props.timer.duration
+    if (timerFromStore.value?.timer?.duration && timerFromStore.value.timer.duration > 0) {
+        return timerFromStore.value.timer.duration
+    }
+    return 0
+}
+
 const onReset = () => {
     stopCountDown()
 
-    timeRemaining.value = initialStartValue.value
+    const resetDuration = resolveResetDuration()
+    initialStartValue.value = resetDuration
+    timeRemaining.value = resetDuration
     percentLeft.value = 100
     timerComplete.value = false
 
-    const time = msToTimeFormat(initialStartValue.value).split(':')
+    const time = msToTimeFormat(resetDuration).split(':')
     days.value = parseInt(time[0])
     hours.value = parseInt(time[1])
     minutes.value = parseInt(time[2])
     seconds.value = parseInt(time[3])
 
     timerStore.updateTimer(props.widgetId, {
-        duration: initialStartValue.value,
+        duration: resetDuration,
         isActive: false,
         endDateTime: null
     })
