@@ -40,8 +40,8 @@ const requirements = computed(() => {
 const unlocks = computed(() => {
   return boss.value.unlocks.map(unlock => ({
     ...unlock,
-    // img: `../src/assets/images/engrams/${unlock.name.replace(/\s+/g, '_')}.png`
-    img: `../src/assets/images/engrams/${unlock.name}.png`
+    // img: `../src/assets/images/engrams/${unlock.name.trim().replace(/\s+/g, '_')}.png`
+    img: `../src/assets/images/engrams/${unlock.fileName}.png`
   }))
 })
 
