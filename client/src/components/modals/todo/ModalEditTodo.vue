@@ -75,9 +75,9 @@ const deleteCategory = (category) => {
             />
 
             <select v-model="localTodo.priority" class="priority-select">
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
+              <option value="High" class="high">High</option>
+              <option value="Medium" class="medium">Medium</option>
+              <option value="Low" class="low">Low</option>
             </select>
           </div>
 
@@ -103,6 +103,22 @@ const deleteCategory = (category) => {
 </template>
 
 <style scoped>
+.high {
+  color: red;
+}
+
+.medium {
+  color: orange;
+}
+
+.low {
+  color: green;
+}
+
+select option {
+  background: black;
+}
+
 /* ───────── PANEL ANIMATION ───────── */
 .panel-slide-enter-active,
 .panel-slide-leave-active {

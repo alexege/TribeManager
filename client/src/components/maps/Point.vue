@@ -1,8 +1,11 @@
 <script setup>
+import { ref, nextTick, computed } from 'vue';
+
 const props = defineProps(['point', 'hoverPoint']);
-import { ref, nextTick } from 'vue';
+
 const isToolTipVisible = ref(false);
 const tooltipPosition = ref({ top: 0, left: 0 });
+
 const showToolTip = async () => {
     isToolTipVisible.value = true;
     await nextTick(); // Wait for the DOM to update
@@ -23,6 +26,7 @@ const showToolTip = async () => {
         tooltipPosition.value = { top, left };
     }
 };
+
 const hideToolTip = () => {
     isToolTipVisible.value = false;
 };
@@ -34,7 +38,8 @@ const hideToolTip = () => {
                 <div class="point" :class="{
                     isHovered: point.name === hoverPoint
                 }"
-                    :style="[{ 'backgroundColor': point.color }, { width: point.size + 'px' }, { height: point.size + 'px' }]">
+                    :style="[{ 'backgroundColor': point.color }, { width: point.size + 'px' }, { height: point.size + 'px' }]"
+                    >
                 </div>
             </div>
             <div class="tooltip" v-if="isToolTipVisible"

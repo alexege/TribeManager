@@ -13,7 +13,8 @@ import pointRoutes from "./routes/point.routes.js";
 import todoRoutes from "./routes/todo.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import timerStateRoutes from "./routes/timerState.routes.js";
-import userRoutes from "./routes/profile.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 import path from "path";
 
 // Seed functions
@@ -57,7 +58,8 @@ app.use("/api/points", pointRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/timer-state", timerStateRoutes);
-app.use("/api/profile", userRoutes);
+app.use("/api/profile", profileRoutes);
+
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "uploads"))

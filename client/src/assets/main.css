@@ -10,6 +10,10 @@
     --secondary-bg-color: #333;
     --alternate-bg-color: #161616;
 
+    --bg-one: #1f1f1f;
+    --bg-two: #121212;
+    --bg-three: #0a0a0a;
+
     --orange: #ff450f;
     --orange-soft: #f06a5b;
     --orange-muted: #c0392b;
@@ -24,6 +28,8 @@
     --terminal-white: #e0e0e0;
     --system-orange: #ff4500;
     --glitchy-grey: #333;
+
+
 }
 
 /* *,

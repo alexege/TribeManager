@@ -33,7 +33,10 @@ export const getAllTodos = async (req, res) => {
 ================================ */
 export const getTodoById = async (req, res) => {
   try {
-    const todo = await Todo.findById(req.params.id);
+    const todo = await Todo.findById(req.params.id)
+    // .populate("categories")
+    // .populate("author")
+    ;
 
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });
@@ -54,7 +57,9 @@ export const updateTodoById = async (req, res) => {
       req.params.id,
       req.body,
       { new: true }
-    );
+    )
+    .populate("categories")
+    .populate("author");
 
     if (!todo) {
       return res.status(404).json({ message: "Todo not found" });

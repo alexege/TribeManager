@@ -728,6 +728,7 @@ input {
 }
 
 .header {
+    font-size: .85rem;
     display: flex;
     align-items: center;
     justify-content: space-between;

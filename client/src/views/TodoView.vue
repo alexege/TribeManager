@@ -302,7 +302,8 @@ const activeCategory = (cat) => {
 .todo-panel {
   margin-top: 1.25rem;
   padding: 0.75rem;
-  background: rgba(15,15,15,0.85);
+  /* background: rgba(15,15,15,0.85); */
+  background: var(--bg-two);
   border: 1px solid rgba(255,255,255,0.15);
 }
 

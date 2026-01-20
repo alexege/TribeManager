@@ -266,8 +266,9 @@ const setCustomMode = () => {
   min-height: 30px;
   padding: 5px;
   border-radius: 5px;
-  background-color: rgb(16, 15, 28);
-  border: 2px solid rgb(16, 15, 28);
+  background-color: var(--bg-one);
+  /* background-color: rgb(16, 15, 28); */
+  /* border: 2px solid rgb(16, 15, 28); */
 }
 
 .setting .icon {

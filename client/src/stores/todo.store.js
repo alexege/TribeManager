@@ -138,8 +138,10 @@ export const useTodoListStore = defineStore('todoList', {
         },
         // ===== Edit Todo =====
         async editTodo(itemId, updateItem) {
+            console.log(`Editing todo ${itemId} with`, updateItem);
             try {
-                const { data: updatedTodo } = await api.put((`/todos/${itemId}`, updateItem))
+                const { data: updatedTodo } = await api.put(`/todos/${itemId}`, updateItem)
+
                 const index = this.todoList.findIndex(
                     (todo) => todo._id === itemId
                 )

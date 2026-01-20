@@ -9,6 +9,7 @@ import TribeTrackerView from "../views/TribeTrackerView.vue";
 import MapsView from "../views/MapsView.vue";
 import TimersView from "../views/TimersView.vue";
 import TodoView from "../views/TodoView.vue";
+import BossesView from "../views/BossesView.vue";
 import SettingsView from "../views/SettingsView.vue";
 
 const router = createRouter({
@@ -69,6 +70,33 @@ const router = createRouter({
       name: "timers",
       component: TimersView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/bosses',
+      name: 'bosses',
+      component: BossesView,
+      children: [
+        {
+          path: '/bosses/all',
+          component: () => import('@/views/bosses/AllTributes.vue')
+        },
+        {
+          path: '/bosses/broodmother',
+          component: () => import('@/views/bosses/Broodmother.vue')
+        },
+        {
+          path: '/bosses/megapithecus',
+          component: () => import('@/views/bosses/Megapithecus.vue')
+        },
+        {
+          path: '/bosses/dragon',
+          component: () => import('@/views/bosses/Dragon.vue')
+        },
+        {
+          path: '/bosses/overseer',
+          component: () => import('@/views/bosses/Overseer.vue')
+        }
+      ]
     },
     {
       path: "/settings",

@@ -189,7 +189,7 @@ onMounted(async () => {
 <style scoped>
 .kanban-board {
   /* min-height: 100vh; */
-  width: 100%;
+  /* width: 100%; */
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
   padding: 10px;
 }
