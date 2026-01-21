@@ -369,7 +369,7 @@ const handleCategoryDragEnd = (e) => {
   flex-direction: column;
   gap: 12px;
   padding: 4px;
-  min-height: 200px;
+  /* min-height: 200px; */
 }
 
 .widgets-container::-webkit-scrollbar {

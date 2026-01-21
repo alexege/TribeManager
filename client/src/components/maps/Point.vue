@@ -14,6 +14,7 @@ const ICON_MAP = {
   obelisk: new URL('@/assets/images/icons/Obelisk.png', import.meta.url).href,
   waypoint: new URL('@/assets/images/icons/Waypoint.png', import.meta.url).href,
   artifact: new URL('@/assets/images/icons/Artifact.png', import.meta.url).href,
+  teleporter: new URL('@/assets/images/icons/Teleporter.png', import.meta.url).href,
 }
 
 /* -------------------------

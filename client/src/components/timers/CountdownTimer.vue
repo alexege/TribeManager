@@ -1,11 +1,14 @@
+
+
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store.js'
+import notificationService from '@/utils/notificationService.js'
+import InlineEdit from '../inputs/InlineEdit.vue'
 import soundService from '@/utils/soundService.js'
 
 const props = defineProps(['timer', 'widgetId', 'widgetImage', 'widgetName'])
 const emit = defineEmits(['image-click'])
-
 const timerStore = useTimerStore()
 const days = ref(0)
 const hours = ref(0)
@@ -18,377 +21,270 @@ const percentLeft = ref(100)
 const timerComplete = ref(false)
 const editTimerTime = ref(false)
 const countDownId = ref(null)
-
-const applyTimerState = (timer) => {
-    stopCountDown(false)
-
-    if (!timer) return
-
-    // Use duration when stopped
-    if (!timer.isActive || !timer.endDateTime) {
-        const duration = timer.duration ?? 0
-        timeRemaining.value = duration
-        const time = msToTimeFormat(duration).split(':')
-        days.value = parseInt(time[0])
-        hours.value = parseInt(time[1])
-        minutes.value = parseInt(time[2])
-        seconds.value = parseInt(time[3])
-        initialStartValue.value = duration
-        timerActive.value = false
-        timerComplete.value = duration === 0
-        percentLeft.value = duration === 0 ? 0 : 100
-        return
-    }
-
-    const remaining = new Date(timer.endDateTime).getTime() - Date.now()
-    if (remaining > 0) {
-        timeRemaining.value = remaining
-        const time = msToTimeFormat(remaining).split(':')
-        days.value = parseInt(time[0])
-        hours.value = parseInt(time[1])
-        minutes.value = parseInt(time[2])
-        seconds.value = parseInt(time[3])
-        initialStartValue.value = timer.duration || remaining
-        startCountDown()
-    } else {
-        timerComplete.value = true
-        percentLeft.value = 0
-    }
-}
-
-
+// --- Initialization ---
 onMounted(() => {
-    // Initialize from stored timer state
-    applyTimerState(props.timer)
-})
+    const storedTimer = props.timer
 
-onUnmounted(() => {
-    if (countDownId.value) {
-        clearInterval(countDownId.value)
+    // 1. Establish the "100%" baseline first
+    if (storedTimer.duration) {
+        initialStartValue.value = storedTimer.duration
+    }
+    // 2. Determine current state (Running, Paused, or New)
+    if (storedTimer.isActive && storedTimer.endDateTime) {
+        const remaining = new Date(storedTimer.endDateTime).getTime() - Date.now()
+        if (remaining > 0) {
+            timeRemaining.value = remaining
+            syncTimeUnits(remaining)
+            startCountDown()
+        } else {
+            setTimerToCompleted()
+        }
+    } else if (storedTimer.remaining) {
+        // Resume from a paused state
+        timeRemaining.value = storedTimer.remaining
+        syncTimeUnits(storedTimer.remaining)
+        calculatePercentage()
+    } else if (storedTimer.duration) {
+        // Fresh timer with a set duration
+        timeRemaining.value = storedTimer.duration
+        syncTimeUnits(storedTimer.duration)
+        calculatePercentage()
     }
 })
-
-watch(
-    () => props.timer,
-    (newTimer) => {
-        applyTimerState(newTimer)
-    },
-    { deep: true }
-)
-
+onUnmounted(() => {
+    if (countDownId.value) clearInterval(countDownId.value)
+})
+// --- Core Logic ---
 const onStart = () => {
     if (timeRemaining.value <= 0) return
 
+    timerComplete.value = false
     if (editTimerTime.value) editTimerTime.value = false
+    const totalSetByUser = days.value * 86400000 + hours.value * 3600000 + minutes.value * 60000 + seconds.value * 1000
 
-    initialStartValue.value = days.value * 86400000 + hours.value * 3600000 + minutes.value * 60000 + seconds.value * 1000
-
+    // Only set new baseline if we aren't resuming or if the timer was previously finished
+    if (initialStartValue.value === 0 || timeRemaining.value === totalSetByUser) {
+        initialStartValue.value = totalSetByUser
+    }
     const endDateTime = Date.now() + timeRemaining.value
-
     timerStore.updateTimer(props.widgetId, {
         endDateTime,
         isActive: true,
         duration: initialStartValue.value
     })
-
     startCountDown()
 }
-
 const startCountDown = () => {
-    if (countDownId.value) {
-        clearInterval(countDownId.value)
-        countDownId.value = null
-    }
-
     timerActive.value = true
-
-    let now = Date.now()
     const desiredDelay = 1000
-
     countDownId.value = setInterval(() => {
+
         timeRemaining.value -= 1000
 
         if (timeRemaining.value <= 0) {
-            timeRemaining.value = 0
-            percentLeft.value = 0
-            timerComplete.value = true
-
-            clearInterval(countDownId.value)
-
-            timerStore.updateTimer(props.widgetId, {
-                isActive: false,
-                duration: 0
-            })
-
-            soundService.play()
-
-            triggerNotification(`${timerFromStore.value?.name || 'Timer Name'} has completed!`, 'success', 3000, false  )
-
+            setTimerToCompleted()
+            soundService.play();
             return
         }
 
-        percentLeft.value = Math.floor((timeRemaining.value / initialStartValue.value) * 100)
+        calculatePercentage()
 
-        const time = msToTimeFormat(timeRemaining.value).split(':')
-        days.value = parseInt(time[0])
-        hours.value = parseInt(time[1])
-        minutes.value = parseInt(time[2])
-        seconds.value = parseInt(time[3])
+        syncTimeUnits(timeRemaining.value)
 
-        now += desiredDelay
     }, desiredDelay)
 }
-
-const stopCountDown = (persist = true) => {
+const setTimerToCompleted = () => {
+    timeRemaining.value = 0
+    percentLeft.value = 0
+    timerComplete.value = true
+    timerActive.value = false
+    if (countDownId.value) clearInterval(countDownId.value)
+    timerStore.updateTimer(props.widgetId, {
+        isActive: false,
+        duration: initialStartValue.value,
+        remaining: 0
+    })
+    triggerNotification(`${timerName.value} has completed!`, 'success', 3000, false)
+}
+const stopCountDown = () => {
     timerActive.value = false
     if (countDownId.value) {
         clearInterval(countDownId.value)
         countDownId.value = null
     }
-
-    if (persist) {
-        timerStore.updateTimer(props.widgetId, {
-            isActive: false,
-            duration: timeRemaining.value
-        })
-    }
-}
-
-const onPause = () => {
-    stopCountDown()
-}
-
-const resolveResetDuration = () => {
-    // Prefer the last known start value, otherwise use persisted duration
-    if (initialStartValue.value && initialStartValue.value > 0) return initialStartValue.value
-    if (props.timer?.duration && props.timer.duration > 0) return props.timer.duration
-    if (timerFromStore.value?.timer?.duration && timerFromStore.value.timer.duration > 0) {
-        return timerFromStore.value.timer.duration
-    }
-    return 0
-}
-
-const onReset = () => {
-    stopCountDown()
-
-    const resetDuration = resolveResetDuration()
-    initialStartValue.value = resetDuration
-    timeRemaining.value = resetDuration
-    percentLeft.value = 100
-    timerComplete.value = false
-
-    const time = msToTimeFormat(resetDuration).split(':')
-    days.value = parseInt(time[0])
-    hours.value = parseInt(time[1])
-    minutes.value = parseInt(time[2])
-    seconds.value = parseInt(time[3])
-
     timerStore.updateTimer(props.widgetId, {
-        duration: resetDuration,
         isActive: false,
-        endDateTime: null
+        remaining: timeRemaining.value,
+        duration: initialStartValue.value // Keep the 100% baseline safe
     })
 }
-
+const onPause = () => stopCountDown()
+const onReset = () => {
+    stopCountDown()
+    timerComplete.value = false
+    timeRemaining.value = initialStartValue.value
+    percentLeft.value = 100
+    syncTimeUnits(initialStartValue.value)
+    timerStore.updateTimer(props.widgetId, {
+        duration: initialStartValue.value,
+        isActive: false,
+        endDateTime: null,
+        remaining: null
+    })
+}
 const onClear = () => {
     stopCountDown()
-
-    timerActive.value = false
     days.value = 0
     hours.value = 0
     minutes.value = 0
     seconds.value = 0
     timeRemaining.value = 0
     percentLeft.value = 100
+    initialStartValue.value = 0
     timerComplete.value = false
-
+    editTimerTime.value = true
     timerStore.updateTimer(props.widgetId, {
         duration: 0,
         isActive: false,
-        endDateTime: null
+        endDateTime: null,
+        remaining: null
     })
-
-    editTimerTime.value = true
 }
-
+// --- Helpers ---
+const calculatePercentage = () => {
+    if (initialStartValue.value > 0) {
+        percentLeft.value = (timeRemaining.value / initialStartValue.value) * 100
+    }
+}
+const syncTimeUnits = (ms) => {
+    const time = msToTimeFormat(ms).split(':')
+    days.value = parseInt(time[0])
+    hours.value = parseInt(time[1])
+    minutes.value = parseInt(time[2])
+    seconds.value = parseInt(time[3])
+}
 const msToTimeFormat = (ms) => {
-    if (ms < 0) return '00:00:00:00'
-    const seconds = Math.floor((ms / 1000) % 60)
-    const minutes = Math.floor((ms / (1000 * 60)) % 60)
-    const hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
-    const days = Math.floor(ms / (1000 * 60 * 60 * 24))
-
-    return `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    if (ms <= 0) return '00:00:00:00'
+    const s = Math.floor((ms / 1000) % 60)
+    const m = Math.floor((ms / (1000 * 60)) % 60)
+    const h = Math.floor((ms / (1000 * 60 * 60)) % 24)
+    const d = Math.floor(ms / (1000 * 60 * 60 * 24))
+    return `${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
-
-watch(
-    [days, hours, minutes, seconds],
-    ([newDays, newHours, newMinutes, newSeconds]) => {
-        if (newHours >= 24) {
-            hours.value = (newHours - 24) > 0 ? newHours - 24 : 0
-            days.value++
-        }
-        if (newMinutes >= 60) {
-            minutes.value = (newMinutes - 60) > 0 ? newMinutes - 60 : 0
-            hours.value++
-        }
-        if (newSeconds >= 60) {
-            seconds.value = (newSeconds - 60) > 0 ? newSeconds - 60 : 0
-            minutes.value++
-        }
-
+watch([days, hours, minutes, seconds], () => {
+    // Only auto-calculate timeRemaining if we are in edit mode or paused
+    if (!timerActive.value) {
+        if (seconds.value >= 60) { seconds.value -= 60; minutes.value++ }
+        if (minutes.value >= 60) { minutes.value -= 60; hours.value++ }
+        if (hours.value >= 24) { hours.value -= 24; days.value++ }
         timeRemaining.value =
             days.value * 86400000 +
             hours.value * 3600000 +
             minutes.value * 60000 +
             seconds.value * 1000
 
-        if (timeRemaining.value === initialStartValue.value) percentLeft.value = 100
-        if (timeRemaining.value === 0) percentLeft.value = 0
+        calculatePercentage()
     }
-)
-
+})
 const updateTimeRemaining = () => {
     initialStartValue.value = timeRemaining.value
 }
-
 const editTime = () => {
     editTimerTime.value = !editTimerTime.value
-    if (timerActive.value) {
-        onPause()
-    }
+    percentLeft.value = 100;
+    if (timerActive.value) onPause()
 }
-
+const triggerNotification = (message, type, duration, persistent) => {
+    notificationService.addNotification(message, type, duration, persistent)
+}
+// --- Computeds ---
 const backgroundStyle = computed(() => {
-    const colors = [
-        { r: 255, g: 0, b: 0 },     // Red
-        { r: 255, g: 255, b: 0 },   // Yellow
-        { r: 0, g: 255, b: 0 },     // Green
-    ]
-
+    const colors = [{ r: 255, g: 0, b: 0 }, { r: 255, g: 255, b: 0 }, { r: 0, g: 255, b: 0 }]
     const numColors = colors.length - 1
     const scaledValue = (percentLeft.value / 100) * numColors
     const lowerIndex = Math.floor(scaledValue)
     const upperIndex = Math.min(lowerIndex + 1, numColors)
     const blendFactor = scaledValue - lowerIndex
-
-    const color1 = colors[lowerIndex]
-    const color2 = colors[upperIndex]
-
-    const r = Math.round(color1.r + blendFactor * (color2.r - color1.r))
-    const g = Math.round(color1.g + blendFactor * (color2.g - color1.g))
-    const b = Math.round(color1.b + blendFactor * (color2.b - color1.b))
-
+    const c1 = colors[lowerIndex], c2 = colors[upperIndex]
+    const r = Math.round(c1.r + blendFactor * (c2.r - c1.r))
+    const g = Math.round(c1.g + blendFactor * (c2.g - c1.g))
+    const b = Math.round(c1.b + blendFactor * (c2.b - c1.b))
     return `rgb(${r}, ${g}, ${b})`
 })
-
-import notificationService from '@/utils/notificationService.js'
-import InlineEdit from '../inputs/InlineEdit.vue'
-const triggerNotification = (message, type, duration, persistent) => {
-    notificationService.addNotification(message, type, duration, persistent)
-}
-
-const timerFromStore = computed(() =>
-  timerStore.getTimerById(props.widgetId)
-)
-
-const timerName = computed(() =>
-  timerFromStore.value?.name || 'Timer'
-)
-
-const onSaveName = (val) => {
-    timerStore.updateWidgetName(props.widgetId, val)
-}
+const timerFromStore = computed(() => timerStore.getTimerById(props.widgetId))
+const timerName = computed(() => timerFromStore.value?.name || props.widgetName || 'Timer')
+const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
 </script>
-
 <template>
-    <div class="countdown-timer" :class="{ timerComplete }"
-        :style="{ border: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }">
+    <div class="countdown-timer"
+        :class="{ running: timerActive, paused: !timerActive && timeRemaining > 0, completed: timerComplete }"
+        :style="{ border: `2px solid ${timerComplete ? '#ff0000' : backgroundStyle}`, transition: 'all 0.5s' }">
 
-            <div class="timer-wrapper">
-
-                <div class="image">
-                    <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
-                </div>
-
+        <div class="progress-container">
+            <div class="progress-bar" :style="{ width: percentLeft + '%', backgroundColor: backgroundStyle }" />
+        </div>
+        <div class="timer-wrapper">
+            <div class="image">
+                <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
+            </div>
             <div class="timer-body">
                 <div class="timer-top">
-                    <InlineEdit
-                        class="timer-name"
-                        :model-value="timerName"
-                        @save="onSaveName">
-                        <!-- {{ timerName.value || 'Timer Name' }} -->
-                        {{ widgetName || 'Timer Name' }}
-                        <!-- placeholder="Timer Name" -->
+                    <InlineEdit class="timer-name" :model-value="timerName" @save="onSaveName">
+                        {{ timerName }}
                     </InlineEdit>
                 </div>
-
-              <div class="timer-middle">
-                  <div class="time-remaining" :style="[{ borderBottom: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' },{ borderTop: `2px solid ${backgroundStyle}`, transition: 'background-color 0.5s' }]">
-                      <template v-if="editTimerTime">
-                          <div class="time-input">
-                              <div class="input-control">
-                                  <label>days</label>
-                                  <input type="number" min="0" max="100" v-model.number="days" placeholder="Days"
-                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                              </div>
-                              <span>:</span>
-                              <div class="input-control">
-                                  <label>hrs</label>
-                                  <input type="number" min="0" max="100" v-model.number="hours" placeholder="Hours"
-                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                              </div>
-                              <span>:</span>
-                              <div class="input-control">
-                                  <label>mins</label>
-                                  <input type="number" min="0" max="100" v-model.number="minutes" placeholder="Minutes"
-                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                              </div>
-                              <span>:</span>
-                              <div class="input-control">
-                                  <label>secs</label>
-                                  <input type="number" min="0" max="100" v-model.number="seconds" placeholder="Seconds"
-                                      @change="updateTimeRemaining" @keydown.enter="onStart()" />
-                              </div>
-                          </div>
-                      </template>
-                      <template v-else>
-                          <span class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
-                      </template>
-                  </div>
-              </div>
-            <div class="timer-bottom">
-                <div class="timer-controls">
-                    <i @click="onReset()" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
-                    <template v-if="timerActive">
-                        <i @click="onPause()" class='bx bx-pause-circle'></i>
-                    </template>
-                    <template v-else>
-                        <i @click="onStart()" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
-                    </template>
-
-                    <i @click="editTime" class='bx bx-edit'></i>
-                    <i @click="onClear()" class='bx bx-x'></i>
+                <div class="timer-middle">
+                    <div class="time-remaining">
+                        <template v-if="editTimerTime">
+                            <div class="time-input">
+                                <div class="input-control">
+                                    <label>days</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" v-model.number="days" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <span>:</span>
+                                    </div>
+                                </div>
+                                <div class="input-control">
+                                    <label>hrs</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" v-model.number="hours" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <span>:</span>
+                                    </div>
+                                </div>
+                                <div class="input-control">
+                                    <label>mins</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" v-model.number="minutes" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <span>:</span>
+                                    </div>
+                                </div>
+                                <div class="input-control"><label>secs</label><input type="number" v-model.number="seconds" @change="updateTimeRemaining" @keydown.enter="onStart" min="0" /></div>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <span v-if="timerComplete" class="time-left blink-red">TIME'S UP!</span>
+                            <span v-else class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
+                        </template>
+                    </div>
+                </div>
+                <div class="timer-bottom">
+                    <div class="timer-controls">
+                        <i @click="onReset" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
+                        <i v-if="timerActive" @click="onPause" class='bx bx-pause-circle'></i>
+                        <i v-else @click="onStart" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
+                        <i @click="editTime" class='bx bx-edit'></i>
+                        <i @click="onClear" class='bx bx-x'></i>
+                    </div>
                 </div>
             </div>
-            </div>
-
-            </div>
-
-
-        <div class="time-up-overlay" v-if="timerComplete">
-          <div class="timer-overlay">
-            <div>{{ timerName.value || 'Timer Name' }}</div>
-            <div>Time's Up!</div>
-            <div class="timer-up-controls">
-                <i @click="onReset(); timerComplete = false" class='bx bx-reset'></i>
-            </div>
         </div>
+        <div class="progress-container">
+            <div class="progress-bar" :style="{ width: percentLeft + '%', backgroundColor: backgroundStyle }" />
         </div>
     </div>
 </template>
-
 <style scoped>
+/* Base Styles */
 .countdown-timer {
     box-shadow: 5px 5px 10px black;
     box-sizing: border-box;
@@ -403,148 +299,49 @@ const onSaveName = (val) => {
     font-family: 'Share Tech Mono', sans-serif;
     background-color: black;
     transition: box-shadow 0.5s, transform 0.5s;
+    overflow: hidden;
 }
-
-.timer-wrapper {
-    display: flex;
-    align-items: center;
+.timer-wrapper { width: 100%; display: flex; align-items: center; }
+.timer-wrapper .image { padding: .5em 0 .5em .5em; display: flex; flex-direction: column; justify-content: center;}
+.timer-image { outline: 1px solid white; width: min(80px, 15vw); aspect-ratio: 1 / 1; object-fit: contain; cursor: pointer; transition: transform 0.15s ease; }
+.timer-image:hover { transform: scale(1.05); }
+.timer-body { width: 100%; }
+.timer-top, .timer-middle, .timer-bottom { display: flex; width: 100%; align-items: center; justify-content: center; color: white; }
+.timer-middle .time-remaining { min-height: 2.5em; display: flex; align-items: center; justify-content: center; position: relative; }
+.time-left { font-size: 2em; padding: 0 .5em; }
+/* Input Styles */
+.time-input { display: flex; justify-content: center; align-items: center; }
+.input-control { display: flex; flex-direction: column; align-items: center; }
+.input-control input { font-size: 1em; width: 35px; background: #222; color: white; border: 1px solid #444; text-align: center; }
+.input-control label { font-size: 0.6rem; text-transform: uppercase; color: #888; }
+.input-control .input-wrapper span {
+    padding: 0 3px;
 }
-
-.timer-wrapper .image {
-    padding: .5em 0 .5em .5em;
+/* Progress Bar */
+.progress-container { width: 100%; height: 0.25rem; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.progress-bar { height: 100%; transition: width 1s linear, background-color 0.5s ease; }
+/* Controls */
+.timer-controls i { margin: 0 10px; font-size: .9em; cursor: pointer; color: #ccc; transition: color 0.2s; }
+.timer-controls i:hover:not(.disabled) { color: white; }
+.disabled { color: #444 !important; cursor: not-allowed !important; opacity: 0.5; }
+/* Status Animations */
+.countdown-timer.running { box-shadow: 0 0 12px rgba(0, 255, 0, 0.35); }
+.countdown-timer.paused { opacity: 0.8; }
+/* Expired State */
+.blink-red { color: #ff4d4d; animation: blinker 1s linear infinite; }
+@keyframes blinker { 50% { opacity: 0; } }
+.countdown-timer.completed {
+    border-color: #ff0000 !important;
+    animation: pulse-red 1.2s infinite, shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
-
-.timer-wrapper .image img {
-    width: 100px;
-    height: 100px;
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
 }
-
-.timer-body {
-    width: 100%;
-    padding: .5em;
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
 }
-
-.timer-top,
-.timer-middle,
-.timer-bottom {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-.timer-top {
-    padding: 10px 0;
-}
-
-.timer-middle {
-    flex-direction: column;
-}
-
-.timer-middle .time-remaining {
-    min-height: 3.75em;
-    display: flex;
-    align-items: center;
-}
-
-.timer-middle .time-remaining .time-input {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.timer-middle .time-remaining .time-input span {
-    padding: 0.25em;
-    align-self: flex-end;
-}
-
-.timer-middle .time-remaining .time-left {
-    font-size: 2em;
-    padding: 0 .5em;
-}
-
-.timer-middle .time-input .input-control {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.timer-middle .time-input .input-control input[type='number'] {
-    font-size: 1em;
-    width: 35px;
-}
-
-.timer-middle .timer-controls i {
-    padding: 0.1em 0.25em;
-    font-size: 20px;
-}
-
-.timer-bottom {
-    padding: 10px 0;
-}
-
-.timer-bottom .timer-controls i {
-    margin: 0 10px;
-}
-
-i {
-    cursor: pointer;
-}
-
-i:not(.disabled):hover {
-    color: white;
-}
-
-.timer-overlay {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 0, 0, 0.15);
-}
-
-.time-up-overlay {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: black;
-    outline: 1px solid black;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    border-radius: 5px;
-}
-
-.timer-up-controls {
-    display: flex;
-    justify-content: center;
-    gap: .5em;
-    padding-top: .5em;
-}
-
-.timer-up-controls i {
-    font-size: 2em;
-}
-
-.disabled {
-    color: gray;
-    opacity: 0.25;
-    cursor: not-allowed !important;
-}
-
-.timer-image {
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.timer-image:hover {
-  transform: scale(1.05);
-}
-
 </style>
