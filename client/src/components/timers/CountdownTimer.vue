@@ -314,9 +314,8 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
 .input-control { display: flex; flex-direction: column; align-items: center; }
 .input-control input { font-size: 1em; width: 35px; background: #222; color: white; border: 1px solid #444; text-align: center; }
 .input-control label { font-size: 0.6rem; text-transform: uppercase; color: #888; }
-.input-control .input-wrapper span {
-    padding: 0 3px;
-}
+.input-control .input-wrapper span { padding: 0 3px; }
+
 /* Progress Bar */
 .progress-container { width: 100%; height: 0.25rem; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .progress-bar { height: 100%; transition: width 1s linear, background-color 0.5s ease; }
@@ -344,4 +343,6 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
     20%, 80% { transform: translate3d(2px, 0, 0); }
     30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
 }
+
+.timer-top, .timer-bottom { padding: 5px 0;}
 </style>

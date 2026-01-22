@@ -191,4 +191,5 @@ const stopwatchColor = computed(() => props.timer.isActive ? '#00d4ff' : '#888')
 /* Progress Bar matching Countdown */
 .progress-container { width: 100%; height: 0.25rem; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .progress-bar { height: 100%; transition: width 0.3s ease, background-color 0.5s ease; }
+.timer-top, .timer-bottom { padding: 5px 0;}
 </style>

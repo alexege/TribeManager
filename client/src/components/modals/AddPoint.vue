@@ -25,6 +25,9 @@ const categories = ref([{
     name: 'Transmitter',
     icon: '',
 }, {
+    name: 'Teleporter',
+    icon: '',
+}, {
     name: 'Death-Marker',
     icon: '',
 }, {

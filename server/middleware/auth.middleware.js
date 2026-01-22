@@ -2,9 +2,9 @@ import jwt from "jsonwebtoken";
 
 // Auth Guard
 export const requireAuth = (req, res, next) => {
-    // console.log("🔍 Auth Check:");
-    // console.log("Headers:", req.headers);
-    // console.log("Authorization:", req.headers.authorization);
+  // console.log("🔍 Auth Check:");
+  // console.log("Headers:", req.headers);
+  // console.log("Authorization:", req.headers.authorization);
 
   const header = req.headers.authorization;
 
@@ -14,7 +14,6 @@ export const requireAuth = (req, res, next) => {
   }
 
   const token = header.split(" ")[1];
-  console.log("Token: ", token);
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -22,7 +21,7 @@ export const requireAuth = (req, res, next) => {
     req.user = {
       userId: decoded.userId,
       role: decoded.role,
-    }
+    };
 
     next();
   } catch (err) {
@@ -34,7 +33,7 @@ export const requireAuth = (req, res, next) => {
 // Role Guard
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
-    if (!req.user ||!allowedRoles.includes(req.user.role)) {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ message: "Forbidden" });
     }
     next();
