@@ -1,12 +1,8 @@
-
-
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTimerStore } from '@/stores/timer.store.js'
-import notificationService from '@/utils/notificationService.js'
+import notificationService from '@/utils/notificationService'
 import InlineEdit from '../inputs/InlineEdit.vue'
-import soundService from '@/utils/soundService.js'
-
 const props = defineProps(['timer', 'widgetId', 'widgetImage', 'widgetName'])
 const emit = defineEmits(['image-click'])
 const timerStore = useTimerStore()
@@ -44,12 +40,13 @@ onMounted(() => {
         timeRemaining.value = storedTimer.remaining
         syncTimeUnits(storedTimer.remaining)
         calculatePercentage()
-    } else if (storedTimer.duration) {
-        // Fresh timer with a set duration
-        timeRemaining.value = storedTimer.duration
-        syncTimeUnits(storedTimer.duration)
-        calculatePercentage()
     }
+    // else if (storedTimer.duration) {
+    //     // Fresh timer with a set duration
+    //     timeRemaining.value = storedTimer.duration
+    //     syncTimeUnits(storedTimer.duration)
+    //     calculatePercentage()
+    // } // Now handled by watcher
 })
 onUnmounted(() => {
     if (countDownId.value) clearInterval(countDownId.value)
@@ -61,11 +58,13 @@ const onStart = () => {
     timerComplete.value = false
     if (editTimerTime.value) editTimerTime.value = false
     const totalSetByUser = days.value * 86400000 + hours.value * 3600000 + minutes.value * 60000 + seconds.value * 1000
-
+    if (totalSetByUser <= 0) return
     // Only set new baseline if we aren't resuming or if the timer was previously finished
-    if (initialStartValue.value === 0 || timeRemaining.value === totalSetByUser) {
-        initialStartValue.value = totalSetByUser
-    }
+    // if (initialStartValue.value === 0 || timeRemaining.value === totalSetByUser) {
+    //     initialStartValue.value = totalSetByUser
+    // }
+    initialStartValue.value = totalSetByUser
+    timeRemaining.value = totalSetByUser
     const endDateTime = Date.now() + timeRemaining.value
     timerStore.updateTimer(props.widgetId, {
         endDateTime,
@@ -78,19 +77,13 @@ const startCountDown = () => {
     timerActive.value = true
     const desiredDelay = 1000
     countDownId.value = setInterval(() => {
-
         timeRemaining.value -= 1000
-
         if (timeRemaining.value <= 0) {
             setTimerToCompleted()
-            soundService.play();
             return
         }
-
         calculatePercentage()
-
         syncTimeUnits(timeRemaining.value)
-
     }, desiredDelay)
 }
 const setTimerToCompleted = () => {
@@ -108,7 +101,11 @@ const setTimerToCompleted = () => {
 }
 const stopCountDown = () => {
     timerActive.value = false
-    if (countDownId.value) {
+    // if (countDownId.value) {
+    //     clearInterval(countDownId.value)
+    //     countDownId.value = null
+    // }
+    if (countDownId.value && !timerActive.value) {
         clearInterval(countDownId.value)
         countDownId.value = null
     }
@@ -171,27 +168,79 @@ const msToTimeFormat = (ms) => {
     const d = Math.floor(ms / (1000 * 60 * 60 * 24))
     return `${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
-watch([days, hours, minutes, seconds], () => {
-    // Only auto-calculate timeRemaining if we are in edit mode or paused
-    if (!timerActive.value) {
-        if (seconds.value >= 60) { seconds.value -= 60; minutes.value++ }
-        if (minutes.value >= 60) { minutes.value -= 60; hours.value++ }
-        if (hours.value >= 24) { hours.value -= 24; days.value++ }
-        timeRemaining.value =
-            days.value * 86400000 +
-            hours.value * 3600000 +
-            minutes.value * 60000 +
-            seconds.value * 1000
+// watch([days, hours, minutes, seconds], () => {
+//     // Only auto-calculate timeRemaining if we are in edit mode or paused
+//     if (!timerActive.value) {
+//         if (seconds.value >= 60) { seconds.value -= 60; minutes.value++ }
+//         if (minutes.value >= 60) { minutes.value -= 60; hours.value++ }
+//         if (hours.value >= 24) { hours.value -= 24; days.value++ }
+//         timeRemaining.value =
+//             days.value * 86400000 +
+//             hours.value * 3600000 +
+//             minutes.value * 60000 +
+//             seconds.value * 1000
 
-        calculatePercentage()
-    }
+//         calculatePercentage()
+//     }
+// })
+watch([days, hours, minutes, seconds], () => {
+  if (!editTimerTime.value) return
+  if (seconds.value >= 60) { seconds.value -= 60; minutes.value++ }
+  if (minutes.value >= 60) { minutes.value -= 60; hours.value++ }
+  if (hours.value >= 24) { hours.value -= 24; days.value++ }
+  timeRemaining.value =
+    days.value * 86400000 +
+    hours.value * 3600000 +
+    minutes.value * 60000 +
+    seconds.value * 1000
+  calculatePercentage()
 })
+// watch(
+//   () => props.timer.duration,
+//   (newDuration) => {
+//     if (timerActive.value) return
+//     if (!newDuration) return
+//     // Stop any active countdown
+//     if (countDownId.value) {
+//       clearInterval(countDownId.value)
+//       countDownId.value = null
+//     }
+//     timerActive.value = false
+//     timerComplete.value = false
+//     editTimerTime.value = false
+//     // Reset baseline + remaining time
+//     initialStartValue.value = newDuration
+//     timeRemaining.value = newDuration
+//     percentLeft.value = 100
+//     syncTimeUnits(newDuration)
+//   },
+//   { immediate: true }
+// )
+watch(
+  () => props.timer.duration,
+  (newDuration) => {
+    if (!newDuration) return
+    if (timerActive.value) return
+    if (countDownId.value) {
+      clearInterval(countDownId.value)
+      countDownId.value = null
+    }
+    timerComplete.value = false
+    editTimerTime.value = false
+    initialStartValue.value = newDuration
+    timeRemaining.value = newDuration
+    percentLeft.value = 100
+    syncTimeUnits(newDuration)
+  },
+  { immediate: true }
+)
+
+
 const updateTimeRemaining = () => {
     initialStartValue.value = timeRemaining.value
 }
 const editTime = () => {
     editTimerTime.value = !editTimerTime.value
-    percentLeft.value = 100;
     if (timerActive.value) onPause()
 }
 const triggerNotification = (message, type, duration, persistent) => {
@@ -240,25 +289,25 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
                                 <div class="input-control">
                                     <label>days</label>
                                     <div class="input-wrapper">
-                                        <input type="number" v-model.number="days" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <input type="number" v-model.number="days" @change="updateTimeRemaining" @keydown.enter="onStart" />
                                         <span>:</span>
                                     </div>
                                 </div>
                                 <div class="input-control">
                                     <label>hrs</label>
                                     <div class="input-wrapper">
-                                        <input type="number" v-model.number="hours" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <input type="number" v-model.number="hours" @change="updateTimeRemaining" @keydown.enter="onStart" />
                                         <span>:</span>
                                     </div>
                                 </div>
                                 <div class="input-control">
                                     <label>mins</label>
                                     <div class="input-wrapper">
-                                        <input type="number" v-model.number="minutes" @change="updateTimeRemaining" @keydown.enter="onStart" min="0"/>
+                                        <input type="number" v-model.number="minutes" @change="updateTimeRemaining" @keydown.enter="onStart" />
                                         <span>:</span>
                                     </div>
                                 </div>
-                                <div class="input-control"><label>secs</label><input type="number" v-model.number="seconds" @change="updateTimeRemaining" @keydown.enter="onStart" min="0" /></div>
+                                <div class="input-control"><label>secs</label><input type="number" v-model.number="seconds" @change="updateTimeRemaining" @keydown.enter="onStart" /></div>
                             </div>
                         </template>
                         <template v-else>
@@ -306,16 +355,19 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
 .timer-image { outline: 1px solid white; width: min(80px, 15vw); aspect-ratio: 1 / 1; object-fit: contain; cursor: pointer; transition: transform 0.15s ease; }
 .timer-image:hover { transform: scale(1.05); }
 .timer-body { width: 100%; }
+.timer-top { padding: .25em }
+.timer-bottom { padding: .25em }
 .timer-top, .timer-middle, .timer-bottom { display: flex; width: 100%; align-items: center; justify-content: center; color: white; }
 .timer-middle .time-remaining { min-height: 2.5em; display: flex; align-items: center; justify-content: center; position: relative; }
 .time-left { font-size: 2em; padding: 0 .5em; }
 /* Input Styles */
 .time-input { display: flex; justify-content: center; align-items: center; }
-.input-control { display: flex; flex-direction: column; align-items: center; }
+.input-control { display: flex; flex-direction: column; align-items: center; margin: 0 5px}
 .input-control input { font-size: 1em; width: 35px; background: #222; color: white; border: 1px solid #444; text-align: center; }
 .input-control label { font-size: 0.6rem; text-transform: uppercase; color: #888; }
-.input-control .input-wrapper span { padding: 0 3px; }
-
+.input-control .input-wrapper { display: flex; align-items: center; position: relative; }
+.input-control .input-wrapper span { position: absolute; right: -8px; font-weight: bold;  }
+/* .input-control .input-wrapper span { padding: 0 3px;  } */
 /* Progress Bar */
 .progress-container { width: 100%; height: 0.25rem; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
 .progress-bar { height: 100%; transition: width 1s linear, background-color 0.5s ease; }
@@ -343,6 +395,4 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
     20%, 80% { transform: translate3d(2px, 0, 0); }
     30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
 }
-
-.timer-top, .timer-bottom { padding: 5px 0;}
 </style>

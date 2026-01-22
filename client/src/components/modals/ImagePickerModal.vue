@@ -3,10 +3,13 @@ import { ref, computed } from 'vue'
 import { useTimerStore } from '@/stores/timer.store'
 
 const props = defineProps({
-  widgetId: String
+  widgetId: {
+    type: String,
+    default: null
+  }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'select'])
 const store = useTimerStore()
 
 const search = ref('')
@@ -57,8 +60,14 @@ const filteredImages = computed(() => {
 })
 
 function selectImage(src) {
-  store.updateWidgetImage(props.widgetId, src)
-  emit('close')
+  // If widgetId is provided, update the widget image in the store
+  if (props.widgetId) {
+    store.updateWidgetImage(props.widgetId, src)
+    emit('close')
+  } else {
+    // Otherwise, just emit the selection (for preset modal)
+    emit('select', src)
+  }
 }
 </script>
 
@@ -84,46 +93,87 @@ function selectImage(src) {
           class="image-item"
           @click="selectImage(img.src)"
         >
-          <img :src="img.src" />
+          <img :src="img.src" :alt="img.label" />
           <span>{{ img.label }}</span>
         </button>
       </div>
     </div>
   </div>
 </template>
+
 <style scoped>
 .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.03);
-    display: grid;
-    place-items: center;
-    z-index: 9999;
-    backdrop-filter: blur(3px);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
 }
 
 .modal {
-  background: var(--secondary-bg-color);
+  background: linear-gradient(145deg, #0e0e0e, #000);
   width: 70vw;
+  max-width: 800px;
   max-height: 80vh;
   padding: 16px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.08),
+    0 20px 50px rgba(0,0,0,.9);
 }
 
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+header h3 {
+  color: white;
+  font-size: 18px;
+  margin: 0;
+}
+
+header button {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  padding: 4px 8px;
+}
+
+header button:hover {
+  opacity: 1;
 }
 
 .search-input {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
   outline: none;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  border-color: rgba(0, 255, 120, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .image-grid {
@@ -131,34 +181,72 @@ header {
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 12px;
   overflow-y: auto;
-  padding: 1em;
+  padding: 8px;
+  max-height: 60vh;
+}
+
+.image-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.image-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.image-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.image-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .image-item {
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   text-align: center;
-  outline: 1px solid white;
+  padding: 12px;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.image-item:hover {
+  border-color: rgba(0, 255, 120, 0.5);
+  background: rgba(0, 255, 120, 0.05);
+  transform: translateY(-2px);
 }
 
 .image-item img {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 8px;
+  height: auto;
+  max-height: 60px;
+  object-fit: contain;
   transition: transform 0.15s ease;
 }
 
 .image-item:hover img {
-  transform: scale(1.08);
+  transform: scale(1.1);
 }
 
 .image-item span {
-  font-size: 0.75rem;
-  opacity: 0.8;
-  color: var(--text-primary);
+  font-size: 0.7rem;
+  opacity: 0.7;
+  color: white;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
-
+.image-item:hover span {
+  opacity: 1;
+  color: #00ff78;
+}
 </style>

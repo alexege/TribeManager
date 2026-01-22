@@ -4,17 +4,19 @@ import { useTimerStore } from '@/stores/timer.store'
 import CountdownTimer from '@/components/timers/CountdownTimer.vue'
 import StopwatchTimer from '@/components/timers/StopwatchTimer.vue'
 import ImagePickerModal from '@/components/modals/ImagePickerModal.vue'
+import AddPresetModal from '@/components/modals/AddPresetModal.vue'
 
 const props = defineProps({ widget: Object })
 const store = useTimerStore()
-
 const isDraggable = ref(false)
 const showPresets = ref(false)
+const showPresetCreator = ref(false)
+const presetToEdit = ref(null)
+const showImagePicker = ref(false)
 
 const handleControlBarMouseDown = () => {
   isDraggable.value = true
 }
-const showImagePicker = ref(false)
 
 const openImagePicker = () => {
   showImagePicker.value = true
@@ -25,11 +27,9 @@ const handleDragStart = (e) => {
     e.preventDefault()
     return
   }
-
   store.startDrag(props.widget.id)
   e.dataTransfer.effectAllowed = 'move'
   e.dataTransfer.setData('text/plain', props.widget.id)
-
   e.target.style.opacity = '0.5'
 }
 
@@ -44,8 +44,23 @@ const handleNameUpdate = (e) => {
 }
 
 const applyPreset = (preset) => {
-  store.applyPresetToWidget(props.widget.id, preset.seconds)
+  console.log("Applying preset:", preset)
+  console.log("props.widget.id:", props.widget.id)
+  store.applyPresetToWidget(props.widget.id, preset.seconds, preset.icon)
   showPresets.value = false
+}
+
+const editPreset = (preset) => {
+  presetToEdit.value = preset
+  showPresetCreator.value = true
+  showPresets.value = false
+}
+
+const editCurrentPreset = () => {
+  const preset = store.presets.find(
+    p => p.seconds * 1000 === props.widget.timer.duration
+  )
+  if (preset) editPreset(preset)
 }
 </script>
 
@@ -61,9 +76,9 @@ const applyPreset = (preset) => {
       class="control-bar"
       @mousedown="handleControlBarMouseDown"
     >
-
-    <span style="margin-right: auto; opacity: 0.25; color: white">{{ widget.type === 'countdown' ? 'Countdown' : 'Stopwatch' }}</span>
-
+      <span style="margin-right: auto; opacity: 0.25; color: white">
+        {{ widget.type === 'countdown' ? 'Countdown' : 'Stopwatch' }}
+      </span>
       <button
         class="toggle-button"
         :disabled="widget.timer?.isActive"
@@ -73,7 +88,6 @@ const applyPreset = (preset) => {
       >
         {{ widget.type === 'countdown' ? '⏱' : '⏳' }}
       </button>
-
       <Transition name="slide-up">
         <div
           v-if="showPresets && widget.type === 'countdown'"
@@ -85,18 +99,22 @@ const applyPreset = (preset) => {
             :key="preset.id"
             class="preset-chip"
             @click="applyPreset(preset)"
+            @contextmenu.prevent="editPreset(preset)"
           >
             {{ preset.label }}
           </button>
 
-          <button class="preset-chip add">
+          <button
+            class="preset-chip add"
+            @click="() => {
+              presetToEdit = null
+              showPresetCreator = true
+            }"
+          >
             + Custom
           </button>
         </div>
       </Transition>
-
-      <button class="save-button" @click.stop="store.persistState()">💾</button>
-
       <button
         class="preset-button"
         @click.stop="showPresets = !showPresets"
@@ -105,20 +123,9 @@ const applyPreset = (preset) => {
       >
         ⚡
       </button>
-
-      <!-- <input
-        :value="widget.name"
-        @input="handleNameUpdate"
-        class="timer-name"
-        placeholder="Timer name..."
-        @click.stop
-        @mousedown.stop
-      /> -->
-
       <div class="drag-handle">
         ⣿
       </div>
-
       <button
         class="delete-button"
         @click.stop="store.removeWidget(widget.id)"
@@ -139,12 +146,26 @@ const applyPreset = (preset) => {
       @image-click="openImagePicker"
     />
 
+    <!-- Modals -->
     <Teleport to="body">
+      <!-- Image Picker Modal - Now with widgetId prop -->
       <Transition name="modal-fade">
         <ImagePickerModal
           v-if="showImagePicker"
-          :widget-id="widget.id"
+          :widgetId="widget.id"
           @close="showImagePicker = false"
+        />
+      </Transition>
+
+      <!-- Preset Creator/Editor Modal -->
+      <Transition name="modal-fade">
+        <AddPresetModal
+          v-if="showPresetCreator"
+          :preset="presetToEdit"
+          @close="() => {
+            showPresetCreator = false
+            presetToEdit = null
+          }"
         />
       </Transition>
     </Teleport>
@@ -153,7 +174,6 @@ const applyPreset = (preset) => {
 
 <style scoped>
 .timer-widget {
-  /* max-width: 450px; */
   margin: 0 auto;
   width: 100%;
   height: 100%;
@@ -171,8 +191,6 @@ const applyPreset = (preset) => {
   position: relative;
   z-index: 1;
   will-change: transform;
-  /* aspect-ratio: 16 / 9; */
-  /* max-width: 320px; */
 }
 
 .timer-widget[draggable="true"] {
@@ -201,11 +219,9 @@ const applyPreset = (preset) => {
   justify-content: end;
   gap: 8px;
   padding: 4px 6px;
-  /* padding: 8px 12px; */
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px 12px 0 0;
-  /* min-height: 40px; */
   cursor: grab;
 }
 
@@ -214,9 +230,7 @@ const applyPreset = (preset) => {
 }
 
 .drag-handle {
-  /* padding: 4px 8px; */
   padding: 0px 0 4px 0;
-
   border-radius: 6px;
   background: rgba(255,255,255,0.08);
   color: #ccc;
@@ -343,9 +357,7 @@ const applyPreset = (preset) => {
   cursor: not-allowed;
 }
 
-/* -------------------------------
-   Preset Button
--------------------------------- */
+/* Preset Button */
 .preset-button {
   width: 20px;
   height: 20px;
@@ -368,21 +380,17 @@ const applyPreset = (preset) => {
   transform: scale(1.1);
 }
 
-/* -------------------------------
-   Preset Drawer
--------------------------------- */
+/* Preset Drawer */
 .preset-drawer {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-
   padding: 10px;
   display: flex;
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
-
   background: linear-gradient(
     to top,
     rgba(0,0,0,.95),
@@ -414,9 +422,7 @@ const applyPreset = (preset) => {
   border-color: rgba(100,150,255,.5);
 }
 
-/* -------------------------------
-   Slide Animation
--------------------------------- */
+/* Slide Animation */
 .slide-up-enter-active,
 .slide-up-leave-active {
   transition: transform .2s ease, opacity .2s ease;
@@ -427,7 +433,6 @@ const applyPreset = (preset) => {
   transform: translateY(100%);
   opacity: 0;
 }
-
 
 /* Modal Fade Transition */
 .modal-fade-enter-active,
@@ -440,5 +445,4 @@ const applyPreset = (preset) => {
   opacity: 0;
   transform: scale(0.96);
 }
-
 </style>
