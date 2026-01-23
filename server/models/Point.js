@@ -16,6 +16,13 @@ const pointSchema = new mongoose.Schema(
       trim: true,
     },
 
+    icon: {
+      type: String,
+      required: false,
+      trim: true,
+      default: "",
+    },
+
     // Absolute pixel coordinates
     x: {
       type: Number,
@@ -77,7 +84,7 @@ const pointSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Point", pointSchema);

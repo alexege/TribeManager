@@ -11,10 +11,15 @@ const tooltipPosition = ref({ top: 0, left: 0 })
 ------------------------- */
 const ICON_MAP = {
   transmitter: new URL('@/assets/images/icons/Transmitter.png', import.meta.url).href,
-  obelisk: new URL('@/assets/images/icons/Obelisk.png', import.meta.url).href,
+  // obelisk: new URL('@/assets/images/icons/Obelisk.png', import.meta.url).href,
   waypoint: new URL('@/assets/images/icons/Waypoint.png', import.meta.url).href,
   artifact: new URL('@/assets/images/icons/Artifact.png', import.meta.url).href,
   teleporter: new URL('@/assets/images/icons/Teleporter.png', import.meta.url).href,
+  'artifact-of-the-brute': new URL('@/assets/images/artifacts/Artifact_of_the_Brute.png', import.meta.url).href,
+  'artifact-of-the-devourer': new URL('@/assets/images/artifacts/Artifact_of_the_Devourer.png', import.meta.url).href,
+  'artifact-of-the-scourge': new URL('@/assets/images/artifacts/Artifact_of_the_Scourge.png', import.meta.url).href,
+  'artifact-of-the-swarm': new URL('@/assets/images/artifacts/Artifact_of_the_Swarm.png', import.meta.url).href,
+  'artifact-of-the-void': new URL('@/assets/images/artifacts/Artifact_of_the_Void.png', import.meta.url).href,
 }
 
 /* -------------------------
@@ -152,6 +157,8 @@ const hideToolTip = () => {
   pointer-events: auto;
   cursor: pointer;
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
+  border-radius: 50%;
+  /* box-shadow: 0 0 5px 5px white; */
 }
 
 .point {

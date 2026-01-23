@@ -1,310 +1,339 @@
-
 // stores/map.store.js
 import { defineStore } from "pinia";
 import { ref, reactive, computed } from "vue";
 import api from "@/services/api"; // Use your centralized api service
 export const useMapStore = defineStore("map", () => {
+  // ─────────────
+  // STATE
+  // ─────────────
+  const activeMapId = ref(null);
+  const activeMapTab = ref("all");
+  const activeBaseMapName = ref("The Island");
+  const mapsById = reactive({});
+  const mapIds = ref([]);
+  const pointsById = reactive({});
+  const pointIdsByMap = reactive({});
+  const loading = ref(false);
+  const error = ref(null);
 
-// ─────────────
-// STATE
-// ─────────────
-const activeMapId = ref(null);
-const activeMapTab = ref("all");
-const activeBaseMapName = ref("The Island");
-const mapsById = reactive({});
-const mapIds = ref([]);
-const pointsById = reactive({});
-const pointIdsByMap = reactive({});
-const loading = ref(false);
-const error = ref(null);
-
-// ─────────────
-// STATIC BASE MAPS & CATEGORIES
-// ─────────────
-const baseMaps = ref([
+  // ─────────────
+  // STATIC BASE MAPS & CATEGORIES
+  // ─────────────
+  const baseMaps = ref([
     { name: "The Island", img: "../../src/assets/images/maps/TheIsland.png" },
-    { name: "The Center", img: "../../src/assets/images/maps/TheCenterMap.jpg" },
-    { name: "Scorched Earth", img: "../../src/assets/images/maps/ScorchedEarth.png" },
+    {
+      name: "The Center",
+      img: "../../src/assets/images/maps/TheCenterMap.jpg",
+    },
+    {
+      name: "Scorched Earth",
+      img: "../../src/assets/images/maps/ScorchedEarth.png",
+    },
     { name: "Astraeos", img: "../../src/assets/images/maps/Astraeos.png" },
     { name: "Extinction", img: "../../src/assets/images/maps/Extinction.png" },
     { name: "Aberration", img: "../../src/assets/images/maps/Aberration.png" },
     { name: "Ragnarok", img: "../../src/assets/images/maps/Ragnarok.png" },
     { name: "Valguero", img: "../../src/assets/images/maps/Valguero.png" },
     { name: "LostColony", img: "../../src/assets/images/maps/LostColony.png" },
-]);
-const categories = [
+  ]);
+
+  const categories = [
     { name: "Raid-Target", icon: "colorize" },
     { name: "Base-Spot", icon: "colorize" },
     { name: "Turrets", icon: "warning" },
     { name: "Resource", icon: "target" },
     { name: "Obelisk", icon: "radio_button_checked" },
     { name: "Transmitter", icon: "cell_tower" },
+    { name: "Teleporter", icon: "cell_tower" },
     { name: "Death-Marker", icon: "skull" },
     { name: "Tame", icon: "pets" },
     { name: "Artifact", icon: "trophy" },
     { name: "Navigation", icon: "location_on" },
     { name: "Waypoint", icon: "home_pin" },
-];
-// ─────────────
-// HELPERS
-// ─────────────
-const clearErrors = () => (error.value = null);
-// ─────────────
-// GETTERS
-// ─────────────
-const activeMap = computed(() => {
+  ];
+
+  // ─────────────
+  // HELPERS
+  // ─────────────
+  const clearErrors = () => (error.value = null);
+
+  // ─────────────
+  // GETTERS
+  // ─────────────
+  const activeMap = computed(() => {
     if (!activeMapId.value) return null;
     const map = mapsById[activeMapId.value];
     if (!map) return null;
     return {
-        ...map,
-        points: (pointIdsByMap[activeMapId.value] || []).map(
-            (pid) => pointsById[pid]
-        ),
+      ...map,
+      points: (pointIdsByMap[activeMapId.value] || []).map(
+        (pid) => pointsById[pid],
+      ),
     };
-});
-const groupedMaps = computed(() =>
+  });
+  const groupedMaps = computed(() =>
     mapIds.value.reduce((acc, id) => {
-        const map = mapsById[id];
-        let group = acc.find((g) => g.name === map.baseMapName);
-        if (!group) {
-            group = { name: map.baseMapName, img: map.img, maps: [] };
-            acc.push(group);
-        }
-        group.maps.push({
-            ...map,
-            points: (pointIdsByMap[id] || []).map((pid) => pointsById[pid]),
-        });
-        return acc;
-    }, [])
-);
-const currentBaseMapInstances = computed(() =>
+      const map = mapsById[id];
+      let group = acc.find((g) => g.name === map.baseMapName);
+      if (!group) {
+        group = { name: map.baseMapName, img: map.img, maps: [] };
+        acc.push(group);
+      }
+      group.maps.push({
+        ...map,
+        points: (pointIdsByMap[id] || []).map((pid) => pointsById[pid]),
+      });
+      return acc;
+    }, []),
+  );
+  const currentBaseMapInstances = computed(() =>
     mapIds.value
-        .filter((id) => mapsById[id]?.baseMapName === activeBaseMapName.value)
-        .map((id) => mapsById[id])
-);
-// ─────────────
-// ACTIONS
-// ─────────────
-const setActiveBaseMap = async (baseMapName) => {
+      .filter((id) => mapsById[id]?.baseMapName === activeBaseMapName.value)
+      .map((id) => mapsById[id]),
+  );
+
+  // ─────────────
+  // ACTIONS
+  // ─────────────
+  const setActiveBaseMap = async (baseMapName) => {
     activeBaseMapName.value = baseMapName;
     // Set first map instance
     const firstInstance = mapIds.value.find(
-        (id) => mapsById[id]?.baseMapName === baseMapName
+      (id) => mapsById[id]?.baseMapName === baseMapName,
     );
     if (firstInstance) await setActiveMap(firstInstance);
-};
-const setActiveMap = async (mapId) => {
+  };
+  const setActiveMap = async (mapId) => {
     activeMapId.value = mapId;
     activeMapTab.value = "all";
     if (pointIdsByMap[mapId] === undefined) {
-        await fetchPoints(mapId);
+      await fetchPoints(mapId);
     }
-};
-const setActiveMapTab = (tabId) => {
+  };
+  const setActiveMapTab = (tabId) => {
     activeMapTab.value = tabId;
-};
-// ─────────────
-// MAP CRUD
-// ─────────────
-const fetchMaps = async () => {
+  };
+  // ─────────────
+  // MAP CRUD
+  // ─────────────
+  const fetchMaps = async () => {
     clearErrors();
     loading.value = true;
     try {
-        const { data: maps } = await api.get("/maps");
-        mapsById.value = {};
-        mapIds.value = [];
-        maps.forEach((map) => {
-            mapsById[map._id] = map;
-            mapIds.value.push(map._id);
+      const { data: maps } = await api.get("/maps");
+      mapsById.value = {};
+      mapIds.value = [];
+      maps.forEach((map) => {
+        mapsById[map._id] = map;
+        mapIds.value.push(map._id);
+      });
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const createMapInstance = async ({ baseMapName, title }) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      const baseMap = baseMaps.value.find((m) => m.name === baseMapName);
+      if (!baseMap) throw new Error(`Base map "${baseMapName}" not found`);
+      const { data: newMap } = await api.post("/maps", {
+        baseMapName,
+        title,
+        img: baseMap.img,
+      });
+      mapIds.value.push(newMap._id);
+      mapsById[newMap._id] = newMap;
+      pointIdsByMap[newMap._id] = [];
+      return newMap;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const updateMapName = async (mapId, newTitle) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      const { data: updated } = await api.put(`/maps/${mapId}`, {
+        title: newTitle,
+      });
+      mapsById[mapId] = updated;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const deleteMapInstance = async (mapId) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      await api.delete(`/maps/${mapId}`);
+      // Clean up store
+      (pointIdsByMap[mapId] || []).forEach((pid) => delete pointsById[pid]);
+      delete mapsById[mapId];
+      delete pointIdsByMap[mapId];
+      mapIds.value = mapIds.value.filter((id) => id !== mapId);
+      if (activeMapId.value === mapId) {
+        if (mapIds.value.length > 0) await setActiveMap(mapIds.value[0]);
+        else activeMapId.value = null;
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  // ─────────────
+  // POINT CRUD
+  // ─────────────
+  const fetchPoints = async (mapId) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      const { data: points } = await api.get(`/points/map/${mapId}`);
+      pointIdsByMap[mapId] = points.map((p) => p._id);
+      points.forEach((p) => {
+        pointsById[p._id] = { id: p._id, ...p };
+      });
+      return points;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const createPoint = async (mapId, pointData) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      const payload = {
+        category: pointData.category || pointData.icon || "default",
+        x: pointData.x,
+        y: pointData.y,
+        pX: pointData.pX,
+        pY: pointData.pY,
+        name: pointData.name || "",
+        description: pointData.description || "",
+        color: pointData.color || "#ff0000",
+        icon: pointData.icon || pointData.category || "location_on",
+        size: pointData.size || 10,
+      };
+      const { data: newPoint } = await api.post(
+        `/points/map/${mapId}`,
+        payload,
+      );
+      if (!pointIdsByMap[mapId]) pointIdsByMap[mapId] = [];
+      pointIdsByMap[mapId].push(newPoint._id);
+      pointsById[newPoint._id] = { id: newPoint._id, ...newPoint };
+      return newPoint;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const updatePoint = async (pointId, updates) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      const allowedFields = [
+        "name",
+        "description",
+        "x",
+        "y",
+        "pX",
+        "pY",
+        "color",
+        "icon",
+        "category",
+        "size",
+      ];
+      const payload = {};
+      allowedFields.forEach((f) => {
+        if (updates[f] !== undefined) payload[f] = updates[f];
+      });
+      const { data: updatedPoint } = await api.put(
+        `/points/${pointId}`,
+        payload,
+      );
+      pointsById[pointId] = { id: updatedPoint._id, ...updatedPoint };
+      return updatedPoint;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+  const deletePoint = async (mapId, pointId) => {
+    clearErrors();
+    loading.value = true;
+    try {
+      await api.delete(`/points/${pointId}`);
+      if (pointIdsByMap[mapId]) {
+        pointIdsByMap[mapId] = pointIdsByMap[mapId].filter(
+          (id) => id !== pointId,
+        );
+      }
+      delete pointsById[pointId];
+      return true;
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const initialize = async () => {
+    clearErrors();
+    loading.value = true;
+
+    try {
+      console.log("🚀 Initializing map store...");
+
+      // 1️⃣ Fetch all maps
+      await fetchMaps();
+
+      // 2️⃣ If no maps exist, create default Island map
+      if (mapIds.value.length === 0) {
+        console.log("No maps found, creating default Island map");
+        await createMapInstance({
+          baseMapName: "The Island",
+          title: "The Island Map",
         });
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-    } finally {
-        loading.value = false;
-    }
-};
-const createMapInstance = async ({ baseMapName, title }) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        const baseMap = baseMaps.value.find((m) => m.name === baseMapName);
-        if (!baseMap) throw new Error(`Base map "${baseMapName}" not found`);
-        const { data: newMap } = await api.post("/maps", {
-            baseMapName,
-            title,
-            img: baseMap.img,
-        });
-        mapIds.value.push(newMap._id);
-        mapsById[newMap._id] = newMap;
-        pointIdsByMap[newMap._id] = [];
-        return newMap;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-const updateMapName = async (mapId, newTitle) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        const { data: updated } = await api.put(`/maps/${mapId}`, { title: newTitle });
-        mapsById[mapId] = updated;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-const deleteMapInstance = async (mapId) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        await api.delete(`/maps/${mapId}`);
-        // Clean up store
-        (pointIdsByMap[mapId] || []).forEach((pid) => delete pointsById[pid]);
-        delete mapsById[mapId];
-        delete pointIdsByMap[mapId];
-        mapIds.value = mapIds.value.filter((id) => id !== mapId);
-        if (activeMapId.value === mapId) {
-            if (mapIds.value.length > 0) await setActiveMap(mapIds.value[0]);
-            else activeMapId.value = null;
-        }
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-// ─────────────
-// POINT CRUD
-// ─────────────
-const fetchPoints = async (mapId) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        const { data: points } = await api.get(`/points/map/${mapId}`);
-        pointIdsByMap[mapId] = points.map((p) => p._id);
-        points.forEach((p) => {
-            pointsById[p._id] = { id: p._id, ...p };
-        });
-        return points;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-const createPoint = async (mapId, pointData) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        const payload = {
-            category: pointData.category || pointData.icon || "default",
-            x: pointData.x,
-            y: pointData.y,
-            pX: pointData.pX,
-            pY: pointData.pY,
-            name: pointData.name || "",
-            description: pointData.description || "",
-            color: pointData.color || "#ff0000",
-            icon: pointData.icon || pointData.category || "location_on",
-            size: pointData.size || 10,
-        };
-        const { data: newPoint } = await api.post(`/points/map/${mapId}`, payload);
-        if (!pointIdsByMap[mapId]) pointIdsByMap[mapId] = [];
-        pointIdsByMap[mapId].push(newPoint._id);
-        pointsById[newPoint._id] = { id: newPoint._id, ...newPoint };
-        return newPoint;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-const updatePoint = async (pointId, updates) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        const allowedFields = [
-            "name", "description", "x", "y", "pX", "pY",
-            "color", "icon", "category", "size"
-        ];
-        const payload = {};
-        allowedFields.forEach((f) => {
-            if (updates[f] !== undefined) payload[f] = updates[f];
-        });
-        const { data: updatedPoint } = await api.put(`/points/${pointId}`, payload);
-        pointsById[pointId] = { id: updatedPoint._id, ...updatedPoint };
-        return updatedPoint;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
-const deletePoint = async (mapId, pointId) => {
-    clearErrors();
-    loading.value = true;
-    try {
-        await api.delete(`/points/${pointId}`);
-        if (pointIdsByMap[mapId]) {
-            pointIdsByMap[mapId] = pointIdsByMap[mapId].filter((id) => id !== pointId);
-        }
-        delete pointsById[pointId];
-        return true;
-    } catch (err) {
-        error.value = err.response?.data?.message || err.message;
-        throw err;
-    } finally {
-        loading.value = false;
-    }
-};
+      }
 
-const initialize = async () => {
-  clearErrors();
-  loading.value = true;
+      // 3️⃣ Set active base map to first available or default
+      if (mapIds.value.length > 0) {
+        const firstMap = mapsById[mapIds.value[0]];
+        activeBaseMapName.value = firstMap.baseMapName;
+        await setActiveMap(firstMap._id); // ensures points are loaded
+      }
 
-  try {
-    console.log("🚀 Initializing map store...");
-
-    // 1️⃣ Fetch all maps
-    await fetchMaps();
-
-    // 2️⃣ If no maps exist, create default Island map
-    if (mapIds.value.length === 0) {
-      console.log("No maps found, creating default Island map");
-      await createMapInstance({ baseMapName: "The Island", title: "The Island Map" });
+      console.log("✅ Map store initialized");
+    } catch (err) {
+      error.value = err.response?.data?.message || err.message;
+      console.error("Failed to initialize map store:", err);
+    } finally {
+      loading.value = false;
     }
+  };
 
-    // 3️⃣ Set active base map to first available or default
-    if (mapIds.value.length > 0) {
-      const firstMap = mapsById[mapIds.value[0]];
-      activeBaseMapName.value = firstMap.baseMapName;
-      await setActiveMap(firstMap._id); // ensures points are loaded
-    }
-
-    console.log("✅ Map store initialized");
-  } catch (err) {
-    error.value = err.response?.data?.message || err.message;
-    console.error("Failed to initialize map store:", err);
-  } finally {
-    loading.value = false;
-  }
-};
-
-
-// ─────────────
-// RETURNED STORE
-// ─────────────
-return {
+  // ─────────────
+  // RETURNED STORE
+  // ─────────────
+  return {
     activeMapId,
     activeMapTab,
     activeBaseMapName,
@@ -331,10 +360,9 @@ return {
     createPoint,
     updatePoint,
     deletePoint,
-    initialize
+    initialize,
   };
 });
-
 
 // import { defineStore } from "pinia";
 

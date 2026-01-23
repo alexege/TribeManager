@@ -95,8 +95,19 @@ const handleWheel = (event) => {
     </div>
 
     <div class="grid author">
-      {{ todo.author?.name || '' }}
+      <!-- {{ todo.author?.name || '' }} -->
+      <div class="user-chip">
+          <img v-if="activeUser?.avatarUrl" :src="activeUser.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
+          <div v-else class="avatar fallback">
+              {{ initials }}
+          </div>
+
+          <span class="username">
+              {{ activeUser?.name || activeUser?.username }}
+          </span>
+      </div>
     </div>
+
 
     <div
       class="grid priority"
@@ -282,4 +293,50 @@ const handleWheel = (event) => {
   transform: translateX(0);
 }
 
+
+/* ---------------- USER CHIP ---------------- */
+
+.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    /* padding: 0.3rem 0.6rem; */
+    padding: 0.15rem 0.3rem;
+    border-radius: 999px;
+    /* background: var(--primary-color); */
+}
+
+.user-chip:hover {
+    background: white;
+    color: black;
+}
+
+.user-chip .username {
+    color: var(--text-primary);
+}
+
+.user-chip:hover .username {
+    color: black;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar.fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: hsl(210, 70%, 80%);
+}
+
+.username {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
 </style>
