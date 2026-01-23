@@ -109,8 +109,7 @@ const onPointSizeChange = (size) => {
                 <span class="material-symbols-outlined exit" @click="emit('modal-close')">close</span>
                 <div class="container">
                     <h2>Edit point: {{ point.name }}</h2>
-                    <pre>category: {{ point.category }}</pre>
-                    <pre>icon: {{ point.icon }}</pre>
+
                     <div class="form-group">
                         <label for="name">Name:</label>
                         <input type="text" id="name" class="input-field name" placeholder="Name"

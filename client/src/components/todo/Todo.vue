@@ -21,10 +21,6 @@ const todoStore = useTodoListStore()
 const isEditing = ref(false)
 const editItem = ref(props.todo)
 
-// const activeUser = computed(() => {
-//   return useAuthStore().activeUser
-// })
-
 const canManage = computed(() => {
   if (!activeUser) return false
   const user = activeUser
@@ -97,13 +93,13 @@ const handleWheel = (event) => {
     <div class="grid author">
       <!-- {{ todo.author?.name || '' }} -->
       <div class="user-chip">
-          <img v-if="activeUser?.avatarUrl" :src="activeUser.avatarUrl" alt="avatar" class="avatar" loading="lazy" />
+          <img v-if="todo.author?.profilePicture" :src="`${todo.author.profilePicture}`" alt="avatar" class="avatar" loading="lazy" />
           <div v-else class="avatar fallback">
               {{ initials }}
           </div>
 
           <span class="username">
-              {{ activeUser?.name || activeUser?.username }}
+              {{ todo.author?.name }}
           </span>
       </div>
     </div>
@@ -307,17 +303,19 @@ const handleWheel = (event) => {
 }
 
 .user-chip:hover {
-    background: white;
+    /* background: white; */
+    /* color: black; */
     color: black;
+    outline: 1px solid white;
 }
 
 .user-chip .username {
     color: var(--text-primary);
 }
 
-.user-chip:hover .username {
+/* .user-chip:hover .username {
     color: black;
-}
+} */
 
 .avatar {
     width: 32px;

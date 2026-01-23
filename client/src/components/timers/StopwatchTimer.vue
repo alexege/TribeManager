@@ -158,6 +158,7 @@ const stopwatchColor = computed(() => props.timer.isActive ? '#00d4ff' : '#888')
 .timer-wrapper { width: 100%; display: flex; align-items: center; }
 .timer-wrapper .image { padding: .5em 0 .5em .5em; display: flex; flex-direction: column; justify-content: center;}
 .timer-image {
+    padding: 0.5em;
     outline: 1px solid white;
     width: min(80px, 15vw);
     aspect-ratio: 1 / 1;

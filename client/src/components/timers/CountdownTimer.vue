@@ -352,7 +352,7 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
 }
 .timer-wrapper { width: 100%; display: flex; align-items: center; }
 .timer-wrapper .image { padding: .5em 0 .5em .5em; display: flex; flex-direction: column; justify-content: center;}
-.timer-image { outline: 1px solid white; width: min(80px, 15vw); aspect-ratio: 1 / 1; object-fit: contain; cursor: pointer; transition: transform 0.15s ease; }
+.timer-image { padding: 0.5em; outline: 1px solid white; width: min(80px, 15vw); aspect-ratio: 1 / 1; object-fit: contain; cursor: pointer; transition: transform 0.15s ease; }
 .timer-image:hover { transform: scale(1.05); }
 .timer-body { width: 100%; }
 .timer-top { padding: .25em }
