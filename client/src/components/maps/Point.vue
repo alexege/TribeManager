@@ -26,8 +26,9 @@ const ICON_MAP = {
    ICON RESOLUTION
 ------------------------- */
 const categoryKey = computed(() =>
-  props.point.icon?.toLowerCase() ||
-  props.point.category?.toLowerCase()
+  props.point.icon?.toLowerCase()
+  // ||
+  // props.point.category?.toLowerCase()
 )
 
 const iconSrc = computed(() => ICON_MAP[categoryKey.value] || null)

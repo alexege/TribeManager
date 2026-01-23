@@ -14,6 +14,7 @@ const pointSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      default: "",
     },
 
     icon: {
@@ -63,11 +64,6 @@ const pointSchema = new mongoose.Schema(
     color: {
       type: String,
       default: "#ff0000",
-    },
-
-    icon: {
-      type: String,
-      default: "location_on",
     },
 
     size: {

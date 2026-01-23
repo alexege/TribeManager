@@ -38,6 +38,7 @@ export const useMapStore = defineStore("map", () => {
   ]);
 
   const categories = [
+    { name: "Point", icon: "colorize" },
     { name: "Raid-Target", icon: "colorize" },
     { name: "Base-Spot", icon: "colorize" },
     { name: "Turrets", icon: "warning" },
@@ -212,11 +213,12 @@ export const useMapStore = defineStore("map", () => {
     }
   };
   const createPoint = async (mapId, pointData) => {
+    console.log("createPoint", mapId, pointData);
     clearErrors();
     loading.value = true;
     try {
       const payload = {
-        category: pointData.category || pointData.icon || "default",
+        category: pointData.category || "default",
         x: pointData.x,
         y: pointData.y,
         pX: pointData.pX,
@@ -224,7 +226,8 @@ export const useMapStore = defineStore("map", () => {
         name: pointData.name || "",
         description: pointData.description || "",
         color: pointData.color || "#ff0000",
-        icon: pointData.icon || pointData.category || "location_on",
+        // icon: pointData.icon || pointData.category || "location_on",
+        icon: pointData.icon || "",
         size: pointData.size || 10,
       };
       const { data: newPoint } = await api.post(

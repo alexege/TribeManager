@@ -95,7 +95,7 @@ const activeMapPoints = computed(() => {
 
 const visiblePoints = computed(() => {
   return activeMapPoints.value.filter(point => {
-    return categoryVisibility.value[point.icon] !== false
+    return categoryVisibility.value[point.category] !== false
   })
 })
 
@@ -103,7 +103,7 @@ const categoriesWithPoints = computed(() => {
   if (!activeMapPoints.value?.length) return []
 
   return categories.filter(category =>
-    activeMapPoints.value.some(p => p.icon === category.name)
+    activeMapPoints.value.some(p => p.category === category.name)
   )
 })
 
@@ -239,7 +239,8 @@ const onAddPoint = (value) => {
     pX: percentX,
     pY: percentY,
     color: value.color,
-    category: value.icon,
+    category: value.category,
+    icon: value.icon,
     size: value.size
   }
 
@@ -297,7 +298,7 @@ const onMouseHoverLeave = () => {
 }
 
 const matchCount = (category) => {
-  return activeMapPoints.value?.filter(point => point.icon === category.name).length
+  return activeMapPoints.value?.filter(point => point.category === category.name).length
 }
 
 const toggleCategory = (categoryName) => {
@@ -495,7 +496,7 @@ const confirmDeleteMap = (mapId) => {
                   <div v-if="!collapsedCategories[category.name]" class="category-content">
                     <template v-for="p in activeMapPoints" :key="p._id">
                       <div
-                        v-if="p.icon === category.name && categoryVisibility[category.name]"
+                        v-if="p.category === category.name && categoryVisibility[category.name]"
                         class="point-display"
                         @mouseover="onMouseOver(p)"
                         @mouseleave="onMouseHoverLeave"

@@ -5,7 +5,12 @@ import ColorDropdown from '@/components/inputs/ColorDropdown.vue';
 const emit = defineEmits(['update-point', 'modal-close'])
 const props = defineProps(['point', 'mapId'])
 const editPoint = shallowRef(props.point) //Made shallow so it doesn't live update
-const categories = ref([{
+const categories = ref([
+{
+    name: 'Point',
+    icon: ''
+},
+{
     name: 'Raid-Target',
     icon: ''
 }, {
@@ -36,6 +41,19 @@ const categories = ref([{
     name: 'Waypoint',
     icon: ''
 }]);
+const icons = [
+    {key: 'Transmitter',                value: new URL('@/assets/images/icons/Transmitter.png', import.meta.url).href },
+    {key: 'Obelisk',                    value: new URL('@/assets/images/icons/Obelisk.png', import.meta.url).href },
+    {key: 'Waypoint',                   value: new URL('@/assets/images/icons/Waypoint.png', import.meta.url).href },
+    {key: 'Artifact',                   value: new URL('@/assets/images/icons/Artifact.png', import.meta.url).href },
+    {key: 'Teleporter',                 value: new URL('@/assets/images/icons/Teleporter.png', import.meta.url).href },
+    {key: 'Artifact-of-the-brute',      value: new URL('@/assets/images/artifacts/Artifact_of_the_Brute.png', import.meta.url).href },
+    {key: 'Artifact-of-the-devourer',   value: new URL('@/assets/images/artifacts/Artifact_of_the_Devourer.png', import.meta.url).href },
+    {key: 'Artifact-of-the-scourge',    value: new URL('@/assets/images/artifacts/Artifact_of_the_Scourge.png', import.meta.url).href },
+    {key: 'Artifact-of-the-swarm',      value: new URL('@/assets/images/artifacts/Artifact_of_the_Swarm.png', import.meta.url).href },
+    {key: 'Artifact-of-the-void',       value: new URL('@/assets/images/artifacts/Artifact_of_the_Void.png', import.meta.url).href },
+]
+
 const onColorSelect = (color) => {
     editPoint.value.color = color
 }
@@ -91,6 +109,8 @@ const onPointSizeChange = (size) => {
                 <span class="material-symbols-outlined exit" @click="emit('modal-close')">close</span>
                 <div class="container">
                     <h2>Edit point: {{ point.name }}</h2>
+                    <pre>category: {{ point.category }}</pre>
+                    <pre>icon: {{ point.icon }}</pre>
                     <div class="form-group">
                         <label for="name">Name:</label>
                         <input type="text" id="name" class="input-field name" placeholder="Name"
@@ -107,10 +127,19 @@ const onPointSizeChange = (size) => {
                         <input type="number" placeholder="latitude" max="100" v-model="editPoint.pY" @input="updateY">
                     </div>
                     <div class="form-group">
-                        <label for="">Icon</label>
-                        <select name="" id="" class="input-field" v-model="editPoint.icon">
+                        <label for="">Category</label>
+                        <select name="" id="" class="input-field" v-model="editPoint.category">
+                            <option value="">None</option>
                             <option v-for="category in categories" :value="category.name" :key="category">{{
                                 category.name }}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="">Icon</label>
+                        <select name="" id="" class="input-field" v-model="editPoint.icon">
+                            <option value="">None</option>
+                            <option v-for="icon in icons" :value="icon.key" :key="icon">{{
+                                icon.key }}</option>
                         </select>
                     </div>
                     <div class="form-group">
