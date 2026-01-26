@@ -267,66 +267,71 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
 <template>
     <div class="countdown-timer"
         :class="{ running: timerActive, paused: !timerActive && timeRemaining > 0, completed: timerComplete }"
-        :style="{ border: `2px solid ${timerComplete ? '#ff0000' : backgroundStyle}`, transition: 'all 0.5s' }">
+        >
+        <!-- :style="{ border: `2px solid ${timerComplete ? '#ff0000' : backgroundStyle}`, transition: 'all 0.5s' }" -->
 
-        <div class="progress-container">
+        <!-- <div class="progress-container">
             <div class="progress-bar" :style="{ width: percentLeft + '%', backgroundColor: backgroundStyle }" />
-        </div>
-        <div class="timer-wrapper">
-            <div class="image">
-                <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
-            </div>
-            <div class="timer-body">
-                <div class="timer-top">
-                    <InlineEdit class="timer-name" :model-value="timerName" @save="onSaveName">
-                        {{ timerName }}
-                    </InlineEdit>
+        </div> -->
+
+        <div class="timer-main">
+            <div class="timer-wrapper">
+                <div class="image">
+                    <img :src="widgetImage" alt="" class="timer-image" @click.stop="emit('image-click')">
                 </div>
-                <div class="timer-middle">
-                    <div class="time-remaining">
-                        <template v-if="editTimerTime">
-                            <div class="time-input">
-                                <div class="input-control">
-                                    <label>days</label>
-                                    <div class="input-wrapper">
-                                        <input type="number" v-model.number="days" @change="updateTimeRemaining" @keydown.enter="onStart" />
-                                        <span>:</span>
+                <div class="timer-body">
+                    <div class="timer-top">
+                        <InlineEdit class="timer-name" :model-value="timerName" @save="onSaveName">
+                            {{ timerName }}
+                        </InlineEdit>
+                    </div>
+                    <div class="timer-middle">
+                        <div class="time-remaining">
+                            <template v-if="editTimerTime">
+                                <div class="time-input">
+                                    <div class="input-control">
+                                        <label>days</label>
+                                        <div class="input-wrapper">
+                                            <input type="number" v-model.number="days" @change="updateTimeRemaining" @keydown.enter="onStart" />
+                                            <span>:</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="input-control">
-                                    <label>hrs</label>
-                                    <div class="input-wrapper">
-                                        <input type="number" v-model.number="hours" @change="updateTimeRemaining" @keydown.enter="onStart" />
-                                        <span>:</span>
+                                    <div class="input-control">
+                                        <label>hrs</label>
+                                        <div class="input-wrapper">
+                                            <input type="number" v-model.number="hours" @change="updateTimeRemaining" @keydown.enter="onStart" />
+                                            <span>:</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="input-control">
-                                    <label>mins</label>
-                                    <div class="input-wrapper">
-                                        <input type="number" v-model.number="minutes" @change="updateTimeRemaining" @keydown.enter="onStart" />
-                                        <span>:</span>
+                                    <div class="input-control">
+                                        <label>mins</label>
+                                        <div class="input-wrapper">
+                                            <input type="number" v-model.number="minutes" @change="updateTimeRemaining" @keydown.enter="onStart" />
+                                            <span>:</span>
+                                        </div>
                                     </div>
+                                    <div class="input-control"><label>secs</label><input type="number" v-model.number="seconds" @change="updateTimeRemaining" @keydown.enter="onStart" /></div>
                                 </div>
-                                <div class="input-control"><label>secs</label><input type="number" v-model.number="seconds" @change="updateTimeRemaining" @keydown.enter="onStart" /></div>
-                            </div>
-                        </template>
-                        <template v-else>
-                            <span v-if="timerComplete" class="time-left blink-red">TIME'S UP!</span>
-                            <span v-else class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
-                        </template>
+                            </template>
+                            <template v-else>
+                                <span v-if="timerComplete" class="time-left blink-red">TIME'S UP!</span>
+                                <span v-else class="time-left">{{ msToTimeFormat(timeRemaining) }}</span>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="timer-bottom">
+                        <div class="timer-controls">
+                            <i @click="onReset" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
+                            <i v-if="timerActive" @click="onPause" class='bx bx-pause-circle'></i>
+                            <i v-else @click="onStart" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
+                            <i @click="editTime" class='bx bx-edit'></i>
+                            <i @click="onClear" class='bx bx-x'></i>
+                        </div>
                     </div>
                 </div>
-                <div class="timer-bottom">
-                    <div class="timer-controls">
-                        <i @click="onReset" class='bx bx-rewind-circle' :class="{ disabled: timeRemaining <= 0 && !timerComplete }"></i>
-                        <i v-if="timerActive" @click="onPause" class='bx bx-pause-circle'></i>
-                        <i v-else @click="onStart" class='bx bx-play-circle' :class="{ disabled: timeRemaining <= 0 }"></i>
-                        <i @click="editTime" class='bx bx-edit'></i>
-                        <i @click="onClear" class='bx bx-x'></i>
-                    </div>
-                </div>
             </div>
         </div>
+
         <div class="progress-container">
             <div class="progress-bar" :style="{ width: percentLeft + '%', backgroundColor: backgroundStyle }" />
         </div>
@@ -349,6 +354,10 @@ const onSaveName = (val) => timerStore.updateWidgetName(props.widgetId, val)
     background-color: black;
     transition: box-shadow 0.5s, transform 0.5s;
     overflow: hidden;
+}
+.timer-main {
+    display: flex;
+    flex-direction: column;
 }
 .timer-wrapper { width: 100%; display: flex; align-items: center; }
 .timer-wrapper .image { padding: .5em 0 .5em .5em; display: flex; flex-direction: column; justify-content: center;}

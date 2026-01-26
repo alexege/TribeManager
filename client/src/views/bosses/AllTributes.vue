@@ -207,7 +207,7 @@ h2 {
 .page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* justify-content: center; */
   align-items: center;
 }
 
@@ -237,6 +237,7 @@ h2 {
   align-items: center;
   flex-direction: column;
   border: 1px solid rgb(16, 15, 28);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 5px;
   padding: 0.25em;
   width: 8em;
